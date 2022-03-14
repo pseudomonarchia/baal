@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"baal/libs/logger"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,7 +8,7 @@ import (
 
 // Index Used to store the global controller struct
 type Index struct {
-	log *logger.Logger
+	*ControllerInjection
 }
 
 // Status Returns whether the server is alive when the route is accessed
