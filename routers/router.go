@@ -17,14 +17,20 @@ type Router struct {
 	conf  *configs.GlobalConf
 }
 
-func registration(c *controllers.Controllers, conf *configs.GlobalConf) *Router {
-	gin.SetMode(conf.MODE)
+// SetupRoutes will register all routers
+func SetupRoutes(c *controllers.Controllers) *gin.Engine {
 	r := gin.Default()
-
 	api := r.Group("api")
 	v1 := api.Group("v1")
 
 	v1.GET("/", c.Index.Status)
+
+	return r
+}
+
+func registration(c *controllers.Controllers, conf *configs.GlobalConf) *Router {
+	gin.SetMode(conf.MODE)
+	r := SetupRoutes(c)
 
 	return &Router{r, conf}
 }
