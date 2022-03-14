@@ -20,6 +20,8 @@ type Router struct {
 // SetupRoutes will register all routers
 func SetupRoutes(c *controllers.Controllers) *gin.Engine {
 	r := gin.Default()
+	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
+
 	api := r.Group("api")
 	v1 := api.Group("v1")
 
