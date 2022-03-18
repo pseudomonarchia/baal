@@ -16,10 +16,10 @@ type GlobalConf struct {
 	PORT string
 }
 
-var dir, _ = os.Getwd()
 var (
-	defaultConfPath = path.Join(dir, "./configs/conf.default.yml")
-	rootConfPath    = path.Join(dir, "./conf.yml")
+	dir, _                 = os.Getwd()
+	defaultConfPath string = path.Join(dir, "./configs/conf.default.yml")
+	rootConfPath    string = path.Join(dir, "./conf.yml")
 )
 
 func registration() *GlobalConf {
