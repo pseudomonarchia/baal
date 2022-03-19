@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	//nolint
-	_ "baal/database/migrations/migration_file"
+	_ "baal/database/migrations/seed_file"
 )
 
 var (
