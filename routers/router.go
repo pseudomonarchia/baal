@@ -17,8 +17,8 @@ type Router struct {
 	conf  *configs.GlobalConf
 }
 
-// SetupRoutes will register all routers
-func SetupRoutes(c *controllers.Controllers) *gin.Engine {
+// Setup will register all routers
+func Setup(c *controllers.Controllers) *gin.Engine {
 	r := gin.Default()
 	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
 
@@ -28,13 +28,6 @@ func SetupRoutes(c *controllers.Controllers) *gin.Engine {
 	v1.GET("/", c.Index.Status)
 
 	return r
-}
-
-func registration(c *controllers.Controllers, conf *configs.GlobalConf) *Router {
-	gin.SetMode(conf.MODE)
-	r := SetupRoutes(c)
-
-	return &Router{r, conf}
 }
 
 // Serve will return `http.server` and service `port`
@@ -49,6 +42,13 @@ func (r *Router) Serve() (*http.Server, string) {
 	}
 
 	return s, port
+}
+
+func registration(c *controllers.Controllers, conf *configs.GlobalConf) *Router {
+	gin.SetMode(conf.MODE)
+	r := Setup(c)
+
+	return &Router{r, conf}
 }
 
 // Module is used for `fx.provider` to inject dependencies

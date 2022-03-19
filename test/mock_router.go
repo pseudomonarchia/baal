@@ -9,5 +9,5 @@ import (
 
 // MockRouter will setup & create router
 func MockRouter() *gin.Engine {
-	return routers.SetupRoutes(&controllers.Controllers{})
+	return routers.Setup(&controllers.Controllers{})
 }

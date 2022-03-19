@@ -3,6 +3,7 @@ package commands
 import (
 	"baal/configs"
 	"baal/controllers"
+	"baal/database"
 	"baal/libs/logger"
 	"baal/routers"
 	"context"
@@ -30,6 +31,7 @@ var (
 				logger.Module,
 				controllers.Module,
 				routers.Module,
+				database.Module,
 				fx.Invoke(serverStart),
 			)
 
@@ -55,7 +57,7 @@ func serverStart(lc fx.Lifecycle, r *routers.Router, log *logger.Logger) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			s, port := r.Serve()
-			log.Info(fmt.Sprintf("Server start on : %s port", port))
+			log.Info(fmt.Sprintf("Server start on >>> %s port", port))
 
 			go s.ListenAndServe()
 			return nil
