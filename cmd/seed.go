@@ -12,29 +12,29 @@ import (
 )
 
 var (
-	migrateRollbackAll                = false
-	migrateRootCmd     *cobra.Command = &cobra.Command{
-		Use:   "migrate",
-		Short: "Migration cli tools",
+	seedRollbackAll                = false
+	seedRootCmd     *cobra.Command = &cobra.Command{
+		Use:   "seed",
+		Short: "Seed cli tools",
 		Args:  cobra.MinimumNArgs(1),
 	}
-	migrateCreateCmd *cobra.Command = &cobra.Command{
+	seedCreateCmd *cobra.Command = &cobra.Command{
 		Use:   "create",
 		Short: "Create migration file",
 		Args:  cobra.RangeArgs(1, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opt, err := migrations.CreateFile(args[0], migrations.TargetMigrations)
+			opt, err := migrations.CreateFile(args[0], migrations.TargetSeeds)
 			if err != nil {
 				return err
 			}
 
-			fmt.Printf("[Baal CLI] Migrate create to >>> %s\n", opt)
+			fmt.Printf("[Baal CLI] Seed create to >>> %s\n", opt)
 			return nil
 		},
 	}
-	migrateUpCmd *cobra.Command = &cobra.Command{
+	seedUpCmd *cobra.Command = &cobra.Command{
 		Use:   "up",
-		Short: "Migrate SQL schema sync up",
+		Short: "Seed SQL schema sync up",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			db, err := database.Setup()
 			databaseName := db.Migrator().CurrentDatabase()
@@ -44,12 +44,12 @@ var (
 				return err
 			}
 
-			return migrations.Migrate(db, migrations.TargetMigrations)
+			return migrations.Migrate(db, migrations.TargetSeeds)
 		},
 	}
-	migrateDownCmd *cobra.Command = &cobra.Command{
+	seedDownCmd *cobra.Command = &cobra.Command{
 		Use:   "down",
-		Short: "Migrate SQL schema sync down",
+		Short: "Seed SQL schema sync down",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			db, err := database.Setup()
 			databaseName := db.Migrator().CurrentDatabase()
@@ -58,22 +58,22 @@ var (
 				return err
 			}
 
-			if migrateRollbackAll {
-				return migrations.RollbackAll(db, migrations.TargetMigrations, func() {})
+			if seedRollbackAll {
+				return migrations.RollbackAll(db, migrations.TargetSeeds, func() {})
 			}
 
-			return migrations.RollbackLast(db, migrations.TargetMigrations)
+			return migrations.RollbackLast(db, migrations.TargetSeeds)
 		},
 	}
 )
 
 func init() {
-	rootCmd.AddCommand(migrateRootCmd)
-	migrateRootCmd.AddCommand(
-		migrateCreateCmd,
-		migrateUpCmd,
-		migrateDownCmd,
+	rootCmd.AddCommand(seedRootCmd)
+	seedRootCmd.AddCommand(
+		seedCreateCmd,
+		seedUpCmd,
+		seedDownCmd,
 	)
 
-	migrateDownCmd.Flags().BoolVarP(&migrateRollbackAll, "all", "", false, "Rollback all")
+	seedDownCmd.Flags().BoolVarP(&seedRollbackAll, "all", "", false, "Rollback all")
 }
