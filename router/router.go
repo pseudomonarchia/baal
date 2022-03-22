@@ -50,8 +50,12 @@ func (r *Router) Serve() (*http.Server, string) {
 }
 
 func registration(c *controller.Controllers, conf *config.GlobalConf) *Router {
-	gin.SetMode(conf.MODE)
-	r := Setup(c)
+	if conf.IsDev() {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
+	r := Setup(c)
 	return &Router{r, conf}
 }

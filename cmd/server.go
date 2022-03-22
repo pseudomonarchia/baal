@@ -17,7 +17,7 @@ import (
 
 var (
 	port      = 7001
-	mode      = "DEBUG"
+	debug     = false
 	serverCmd = &cobra.Command{
 		Use:   "server",
 		Short: "Run Ball server for localhost",
@@ -49,8 +49,8 @@ var (
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
-	serverCmd.Flags().IntVarP(&port, "port", "p", 7001, "Server listent on port")
-	serverCmd.Flags().StringVarP(&mode, "mode", "m", "debug", "Use debug/release mode")
+	serverCmd.Flags().IntVarP(&port, "port", "p", port, "Server listent on port")
+	serverCmd.Flags().BoolVarP(&debug, "mode", "d", debug, "Use debug/release mode")
 }
 
 func serverStart(lc fx.Lifecycle, r *router.Router, log *logger.Logger) {
@@ -71,5 +71,5 @@ func serverStart(lc fx.Lifecycle, r *router.Router, log *logger.Logger) {
 
 func setENV() {
 	os.Setenv("PORT", strconv.Itoa(port))
-	os.Setenv("MODE", mode)
+	os.Setenv("DEBUG", strconv.FormatBool(debug))
 }

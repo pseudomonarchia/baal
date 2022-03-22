@@ -4,7 +4,6 @@ import (
 	"baal/lib/file"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
@@ -12,13 +11,13 @@ import (
 
 // GlobalConf represents a global config struct
 type GlobalConf struct {
-	MODE string
-	PORT string
+	DEBUG bool
+	PORT  string
 }
 
 var (
 	dir, _          = os.Getwd()
-	defaultConfPath = path.Join(dir, "./configs/conf.default.yml")
+	defaultConfPath = path.Join(dir, "./config/conf.default.yml")
 	rootConfPath    = path.Join(dir, "./conf.yml")
 )
 
@@ -26,21 +25,23 @@ var (
 var Module fx.Option = fx.Options(fx.Provide(registration))
 
 func registration() *GlobalConf {
-	var Global GlobalConf
-	confPath := rootConfPath
-	if !file.IsExists(rootConfPath) {
-		confPath = defaultConfPath
+	var global GlobalConf
+	confPath := defaultConfPath
+	if file.IsExists(rootConfPath) {
+		confPath = rootConfPath
 	}
 
 	viper.SetConfigFile(confPath)
 	viper.ReadInConfig()
-	viper.AutomaticEnv()
-	viper.Unmarshal(&Global)
+	viper.Unmarshal(&global)
 
-	return &Global
+	global.DEBUG = os.Getenv("DEBUG") == "true"
+	global.PORT = os.Getenv("PORT")
+
+	return &global
 }
 
 // IsDev method is used to return whether it is currently in development mode
 func (c *GlobalConf) IsDev() bool {
-	return strings.ToUpper(c.MODE) == "DEBUG"
+	return c.DEBUG
 }
