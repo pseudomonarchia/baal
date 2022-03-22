@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"go.uber.org/fx"
@@ -58,7 +59,8 @@ func Setup() (*gorm.DB, error) {
 func registration() *gorm.DB {
 	conn, err := Setup()
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	return conn

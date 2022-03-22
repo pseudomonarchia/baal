@@ -1,4 +1,4 @@
-package commands
+package cmd
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var rootCmd *cobra.Command = &cobra.Command{
+var rootCmd = &cobra.Command{
 	Use:   "baal",
 	Short: "Baal command line",
 	Args:  cobra.MinimumNArgs(1),

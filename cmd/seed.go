@@ -1,29 +1,29 @@
-package commands
+package cmd
 
 import (
 	"baal/database"
-	"baal/database/migrations"
+	"baal/database/migration"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
 	//nolint
-	_ "baal/database/migrations/seed_file"
+	_ "baal/database/migration/seedfile"
 )
 
 var (
-	seedRollbackAll                = false
-	seedRootCmd     *cobra.Command = &cobra.Command{
+	seedRollbackAll = false
+	seedRootCmd     = &cobra.Command{
 		Use:   "seed",
 		Short: "Seed cli tools",
 		Args:  cobra.MinimumNArgs(1),
 	}
-	seedCreateCmd *cobra.Command = &cobra.Command{
+	seedCreateCmd = &cobra.Command{
 		Use:   "create",
 		Short: "Create migration file",
 		Args:  cobra.RangeArgs(1, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opt, err := migrations.CreateFile(args[0], migrations.TargetSeeds)
+			opt, err := migration.CreateFile(args[0], migration.TargetSeeds)
 			if err != nil {
 				return err
 			}
@@ -32,7 +32,7 @@ var (
 			return nil
 		},
 	}
-	seedUpCmd *cobra.Command = &cobra.Command{
+	seedUpCmd = &cobra.Command{
 		Use:   "up",
 		Short: "Seed SQL schema sync up",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -44,10 +44,10 @@ var (
 				return err
 			}
 
-			return migrations.Migrate(db, migrations.TargetSeeds)
+			return migration.Migrate(db, migration.TargetSeeds)
 		},
 	}
-	seedDownCmd *cobra.Command = &cobra.Command{
+	seedDownCmd = &cobra.Command{
 		Use:   "down",
 		Short: "Seed SQL schema sync down",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,10 +59,10 @@ var (
 			}
 
 			if seedRollbackAll {
-				return migrations.RollbackAll(db, migrations.TargetSeeds, func() {})
+				return migration.RollbackAll(db, migration.TargetSeeds, func() {})
 			}
 
-			return migrations.RollbackLast(db, migrations.TargetSeeds)
+			return migration.RollbackLast(db, migration.TargetSeeds)
 		},
 	}
 )

@@ -1,8 +1,8 @@
-package controllers
+package controller
 
 import (
-	"baal/configs"
-	"baal/libs/logger"
+	"baal/config"
+	"baal/lib/logger"
 
 	"go.uber.org/fx"
 )
@@ -12,14 +12,17 @@ type Controllers struct {
 	Index *Index
 }
 
-// ControllerInjection represents a inject controller struct
-type ControllerInjection struct {
+// C represents a inject controller struct
+type C struct {
 	Log  *logger.Logger
-	Conf *configs.GlobalConf
+	Conf *config.GlobalConf
 }
 
-func registration(log *logger.Logger, conf *configs.GlobalConf) *Controllers {
-	injection := &ControllerInjection{
+var _ = (*Controllers)(nil)
+var _ = (*C)(nil)
+
+func registration(log *logger.Logger, conf *config.GlobalConf) *Controllers {
+	injection := &C{
 		log,
 		conf,
 	}

@@ -1,4 +1,4 @@
-package models
+package model
 
 import "time"
 
@@ -14,6 +14,6 @@ type UserHashSchema struct {
 }
 
 // TableName get database table name
-func (UserHashSchema) TableName() string {
+func (*UserHashSchema) TableName() string {
 	return tableName
 }

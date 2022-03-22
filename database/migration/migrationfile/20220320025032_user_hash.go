@@ -1,22 +1,22 @@
 package migrationfile
 
 import (
-	"baal/database/migrations"
-	"baal/models"
+	"baal/database/migration"
+	"baal/model"
 
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
 )
 
 func init() {
-	migrations.SetMigration(&gormigrate.Migration{
+	migration.SetMigration(&gormigrate.Migration{
 		ID: "20220320025032_user_hash",
 		Migrate: func(db *gorm.DB) error {
-			model := &models.UserHashSchema{}
+			model := &model.UserHashSchema{}
 			return db.Migrator().AutoMigrate(model)
 		},
 		Rollback: func(db *gorm.DB) error {
-			model := &models.UserHashSchema{}
+			model := &model.UserHashSchema{}
 			return db.Migrator().DropTable(model.TableName())
 		},
 	})

@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"baal/configs"
+	"baal/config"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -12,7 +12,12 @@ type Logger struct {
 	*zap.Logger
 }
 
-func registration(conf *configs.GlobalConf) *Logger {
+var _ = (*Logger)(nil)
+
+// Module is used for `fx.provider` to inject dependencies
+var Module = fx.Option(fx.Provide(registration))
+
+func registration(conf *config.GlobalConf) *Logger {
 	var log *zap.Logger
 	if conf.IsDev() {
 		log, _ = zap.NewDevelopment()
@@ -23,6 +28,3 @@ func registration(conf *configs.GlobalConf) *Logger {
 	defer log.Sync()
 	return &Logger{log}
 }
-
-// Module is used for `fx.provider` to inject dependencies
-var Module = fx.Option(fx.Provide(registration))

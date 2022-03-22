@@ -1,7 +1,7 @@
 package main
 
-import commands "baal/cmd"
+import "baal/cmd"
 
 func main() {
-	commands.Execute()
+	cmd.Execute()
 }

@@ -1,11 +1,11 @@
-package commands
+package cmd
 
 import (
-	"baal/configs"
-	"baal/controllers"
+	"baal/config"
+	"baal/controller"
 	"baal/database"
-	"baal/libs/logger"
-	"baal/routers"
+	"baal/lib/logger"
+	"baal/router"
 	"context"
 	"fmt"
 	"os"
@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	port      int            = 7001
-	mode      string         = "DEBUG"
-	serverCmd *cobra.Command = &cobra.Command{
+	port      = 7001
+	mode      = "DEBUG"
+	serverCmd = &cobra.Command{
 		Use:   "server",
 		Short: "Run Ball server for localhost",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -27,10 +27,10 @@ var (
 			defer cancel()
 			app := fx.New(
 				fx.NopLogger,
-				configs.Module,
+				config.Module,
 				logger.Module,
-				controllers.Module,
-				routers.Module,
+				controller.Module,
+				router.Module,
 				database.Module,
 				fx.Invoke(serverStart),
 			)
@@ -53,7 +53,7 @@ func init() {
 	serverCmd.Flags().StringVarP(&mode, "mode", "m", "debug", "Use debug/release mode")
 }
 
-func serverStart(lc fx.Lifecycle, r *routers.Router, log *logger.Logger) {
+func serverStart(lc fx.Lifecycle, r *router.Router, log *logger.Logger) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			s, port := r.Serve()

@@ -1,4 +1,4 @@
-package migrations
+package migration
 
 import (
 	"fmt"
@@ -17,11 +17,11 @@ import (
 
 // TargetMigrations/TargetSeeds is CreateFile  for `migrations/seeds`
 var (
-	dir, _                                   = os.Getwd()
-	TargetMigrations string                  = "migrations"
-	TargetSeeds      string                  = "seeds"
-	timestampFormat  string                  = "20060102150405"
-	migrations       []*gormigrate.Migration = []*gormigrate.Migration{}
+	dir, _           = os.Getwd()
+	TargetMigrations = "migrations"
+	TargetSeeds      = "seeds"
+	timestampFormat  = "20060102150405"
+	migrations       = []*gormigrate.Migration{}
 )
 
 func getOption(target string) *gormigrate.Options {

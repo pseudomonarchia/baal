@@ -1,14 +1,14 @@
 package migrationfile
 
 import (
-	"baal/database/migrations"
+	"baal/database/migration"
 
 	"github.com/go-gormigrate/gormigrate/v2"
 	"gorm.io/gorm"
 )
 
 func init() {
-	migrations.SetMigration(&gormigrate.Migration{
+	migration.SetMigration(&gormigrate.Migration{
 		ID: "%s",
 		Migrate: func(db *gorm.DB) error {
 			return nil

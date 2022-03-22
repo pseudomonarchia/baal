@@ -1,8 +1,8 @@
-package routers
+package router
 
 import (
-	"baal/configs"
-	"baal/controllers"
+	"baal/config"
+	"baal/controller"
 	"fmt"
 	"net/http"
 	"time"
@@ -14,11 +14,16 @@ import (
 // Router represents a global router struct
 type Router struct {
 	route *gin.Engine
-	conf  *configs.GlobalConf
+	conf  *config.GlobalConf
 }
 
+var _ = (*Router)(nil)
+
+// Module is used for `fx.provider` to inject dependencies
+var Module fx.Option = fx.Options(fx.Provide(registration))
+
 // Setup will register all routers
-func Setup(c *controllers.Controllers) *gin.Engine {
+func Setup(c *controller.Controllers) *gin.Engine {
 	r := gin.Default()
 	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
 
@@ -44,12 +49,9 @@ func (r *Router) Serve() (*http.Server, string) {
 	return s, port
 }
 
-func registration(c *controllers.Controllers, conf *configs.GlobalConf) *Router {
+func registration(c *controller.Controllers, conf *config.GlobalConf) *Router {
 	gin.SetMode(conf.MODE)
 	r := Setup(c)
 
 	return &Router{r, conf}
 }
-
-// Module is used for `fx.provider` to inject dependencies
-var Module fx.Option = fx.Options(fx.Provide(registration))

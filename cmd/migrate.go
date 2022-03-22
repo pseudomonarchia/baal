@@ -1,29 +1,29 @@
-package commands
+package cmd
 
 import (
 	"baal/database"
-	"baal/database/migrations"
+	"baal/database/migration"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
 	//nolint
-	_ "baal/database/migrations/migration_file"
+	_ "baal/database/migration/migrationfile"
 )
 
 var (
-	migrateRollbackAll                = false
-	migrateRootCmd     *cobra.Command = &cobra.Command{
+	migrateRollbackAll = false
+	migrateRootCmd     = &cobra.Command{
 		Use:   "migrate",
 		Short: "Migration cli tools",
 		Args:  cobra.MinimumNArgs(1),
 	}
-	migrateCreateCmd *cobra.Command = &cobra.Command{
+	migrateCreateCmd = &cobra.Command{
 		Use:   "create",
 		Short: "Create migration file",
 		Args:  cobra.RangeArgs(1, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opt, err := migrations.CreateFile(args[0], migrations.TargetMigrations)
+			opt, err := migration.CreateFile(args[0], migration.TargetMigrations)
 			if err != nil {
 				return err
 			}
@@ -32,7 +32,7 @@ var (
 			return nil
 		},
 	}
-	migrateUpCmd *cobra.Command = &cobra.Command{
+	migrateUpCmd = &cobra.Command{
 		Use:   "up",
 		Short: "Migrate SQL schema sync up",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -44,10 +44,10 @@ var (
 				return err
 			}
 
-			return migrations.Migrate(db, migrations.TargetMigrations)
+			return migration.Migrate(db, migration.TargetMigrations)
 		},
 	}
-	migrateDownCmd *cobra.Command = &cobra.Command{
+	migrateDownCmd = &cobra.Command{
 		Use:   "down",
 		Short: "Migrate SQL schema sync down",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,10 +59,10 @@ var (
 			}
 
 			if migrateRollbackAll {
-				return migrations.RollbackAll(db, migrations.TargetMigrations, func() {})
+				return migration.RollbackAll(db, migration.TargetMigrations, func() {})
 			}
 
-			return migrations.RollbackLast(db, migrations.TargetMigrations)
+			return migration.RollbackLast(db, migration.TargetMigrations)
 		},
 	}
 )

@@ -1,4 +1,4 @@
-package utils
+package textcolor
 
 import (
 	"fmt"
@@ -36,8 +36,8 @@ const (
 	TextWhite
 )
 
-// ColorText formatted output text color
-func ColorText(textColor int, msg string) string {
+// Format formatted output text color
+func Format(textColor int, msg string) string {
 	conf := 0
 	bg := 0
 

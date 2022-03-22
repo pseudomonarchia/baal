@@ -6,3 +6,6 @@ vendor
 
 # gin cli build file
 gin-bin
+
+# build cmd file
+baal
