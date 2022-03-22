@@ -36,7 +36,7 @@ var (
 		Use:   "up",
 		Short: "Seed SQL schema sync up",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := database.Setup()
+			db, err := database.New()
 			databaseName := db.Migrator().CurrentDatabase()
 			fmt.Printf("[Baal CLI] Migrate Current Database >>> %s\n", databaseName)
 
@@ -51,7 +51,7 @@ var (
 		Use:   "down",
 		Short: "Seed SQL schema sync down",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := database.Setup()
+			db, err := database.New()
 			databaseName := db.Migrator().CurrentDatabase()
 			fmt.Printf("[Baal CLI] Migrate Current Database >>> %s\n", databaseName)
 			if err != nil {

@@ -22,8 +22,8 @@ var _ = (*Router)(nil)
 // Module is used for `fx.provider` to inject dependencies
 var Module fx.Option = fx.Options(fx.Provide(registration))
 
-// Setup will register all routers
-func Setup(c *controller.Controllers) *gin.Engine {
+// New will register all routers
+func New(c *controller.Controllers) *gin.Engine {
 	r := gin.Default()
 	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
 
@@ -56,6 +56,6 @@ func registration(c *controller.Controllers, conf *config.GlobalConf) *Router {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	r := Setup(c)
+	r := New(c)
 	return &Router{r, conf}
 }

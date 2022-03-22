@@ -23,8 +23,8 @@ const (
 	maxIdleConns = 10
 )
 
-// Setup Connent to datebase
-func Setup() (*gorm.DB, error) {
+// New Connent to datebase
+func New() (*gorm.DB, error) {
 	conf := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	}
@@ -57,7 +57,7 @@ func Setup() (*gorm.DB, error) {
 }
 
 func registration() *gorm.DB {
-	conn, err := Setup()
+	conn, err := New()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
