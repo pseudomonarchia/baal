@@ -3,6 +3,7 @@ package router
 import (
 	"baal/config"
 	"baal/controller"
+	"baal/middleware"
 	"fmt"
 	"net/http"
 	"time"
@@ -24,7 +25,13 @@ var Module fx.Option = fx.Options(fx.Provide(registration))
 
 // New will register all routers
 func New(c *controller.Controllers) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(
+		middleware.CorsMiddleware(),
+		gin.Logger(),
+		gin.Recovery(),
+	)
+
 	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
 
 	api := r.Group("api")
