@@ -2,10 +2,8 @@ package database
 
 import (
 	"fmt"
-	"os"
 	"time"
 
-	"go.uber.org/fx"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -46,6 +44,8 @@ func New() (*gorm.DB, error) {
 
 	db, err := conn.DB()
 	if err != nil {
+		// fmt.Fprintln(os.Stderr, err)
+		// os.Exit(1)
 		return nil, err
 	}
 
@@ -55,16 +55,3 @@ func New() (*gorm.DB, error) {
 
 	return conn, nil
 }
-
-func registration() *gorm.DB {
-	conn, err := New()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	return conn
-}
-
-// Module is used for `fx.provider` to inject dependencies
-var Module fx.Option = fx.Options(fx.Provide(registration))

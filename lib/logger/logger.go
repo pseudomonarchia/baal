@@ -2,29 +2,33 @@ package logger
 
 import (
 	"baal/config"
+	"sync"
 
-	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
-// Logger represents a global logger struct
-type Logger struct {
+type logger struct {
 	*zap.Logger
 }
 
-var _ = (*Logger)(nil)
+// Log is Global default logger
+var Log *logger
+var once sync.Once
 
-// Module is used for `fx.provider` to inject dependencies
-var Module = fx.Option(fx.Provide(registration))
+// Setup use log
+func Setup() {
+	once.Do(func() {
+		Log = newLogger()
+	})
+}
 
-func registration(conf *config.GlobalConf) *Logger {
+func newLogger() *logger {
 	var log *zap.Logger
-	if conf.IsDev() {
+	if config.Global.IsDev() {
 		log, _ = zap.NewDevelopment()
 	} else {
 		log, _ = zap.NewProduction()
 	}
 
-	defer log.Sync()
-	return &Logger{log}
+	return &logger{log}
 }

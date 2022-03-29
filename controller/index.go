@@ -1,17 +1,16 @@
 package controller
 
 import (
+	"baal/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Index Used to store the global controller struct
+// Index ...
 type Index struct {
-	*C
+	Service *service.Services
 }
-
-var _ = (*Index)(nil)
 
 // Status Returns whether the server is alive when the route is accessed
 func (i *Index) Status(c *gin.Context) {

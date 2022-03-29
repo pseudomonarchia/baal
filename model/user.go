@@ -6,10 +6,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	tableNmae = "user"
-)
-
 // UserSchema for GORM
 type UserSchema struct {
 	ID        uint   `gorm:"primaryKey;autoIncrement"`
@@ -19,10 +15,10 @@ type UserSchema struct {
 	Enable    bool   `gorm:"default:false;not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index;"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-// TableName get database table name
+// TableName is GORM hook
 func (*UserSchema) TableName() string {
-	return tableNmae
+	return "user"
 }

@@ -2,17 +2,21 @@ package config
 
 import (
 	"baal/lib/file"
+	"fmt"
 	"os"
 	"path"
+	"strconv"
+	"sync"
 
 	"github.com/spf13/viper"
-	"go.uber.org/fx"
 )
 
 // GlobalConf represents a global config struct
 type GlobalConf struct {
 	DEBUG bool
-	PORT  string
+	PORT  int
+	HOST  string
+	HTTPS bool
 }
 
 var (
@@ -21,11 +25,13 @@ var (
 	rootConfPath    = path.Join(dir, "./conf.yml")
 )
 
-// Module is used for `fx.provider` to inject dependencies
-var Module fx.Option = fx.Options(fx.Provide(registration))
+// Global config infomation
+var Global *GlobalConf
+var once sync.Once
 
-func registration() *GlobalConf {
+func init() {
 	var global GlobalConf
+
 	confPath := defaultConfPath
 	if file.IsExists(rootConfPath) {
 		confPath = rootConfPath
@@ -35,13 +41,32 @@ func registration() *GlobalConf {
 	viper.ReadInConfig()
 	viper.Unmarshal(&global)
 
-	global.DEBUG = os.Getenv("DEBUG") == "true"
-	global.PORT = os.Getenv("PORT")
+	Global = &global
+}
 
-	return &global
+// Setup override default configuration
+func Setup(conf *GlobalConf) {
+	once.Do(func() {
+		Global = conf
+	})
 }
 
 // IsDev method is used to return whether it is currently in development mode
 func (c *GlobalConf) IsDev() bool {
 	return c.DEBUG
+}
+
+// URL get local service address
+func (c *GlobalConf) URL() string {
+	protocol := "http"
+	if c.HTTPS {
+		protocol = "https"
+	}
+
+	return fmt.Sprintf(
+		"%s://%s:%s",
+		protocol,
+		c.HOST,
+		strconv.Itoa(c.PORT),
+	)
 }

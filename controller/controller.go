@@ -1,36 +1,17 @@
 package controller
 
-import (
-	"baal/config"
-	"baal/lib/logger"
-
-	"go.uber.org/fx"
-)
+import "baal/service"
 
 // Controllers represents a global controllers struct
 type Controllers struct {
 	Index *Index
+	OAuth *OAuth
 }
 
-// C represents a inject controller struct
-type C struct {
-	Log  *logger.Logger
-	Conf *config.GlobalConf
-}
-
-var _ = (*Controllers)(nil)
-var _ = (*C)(nil)
-
-func registration(log *logger.Logger, conf *config.GlobalConf) *Controllers {
-	injection := &C{
-		log,
-		conf,
-	}
-
+// New return all controller
+func New(s *service.Services) *Controllers {
 	return &Controllers{
-		&Index{injection},
+		Index: &Index{s},
+		OAuth: &OAuth{s},
 	}
 }
-
-// Module is used for `fx.provider` to inject dependencies
-var Module fx.Option = fx.Options(fx.Provide(registration))

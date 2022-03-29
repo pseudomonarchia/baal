@@ -15,7 +15,7 @@ import (
 	_ "baal/database"
 )
 
-// TargetMigrations/TargetSeeds is CreateFile  for `migrations/seeds`
+// TargetMigrations/TargetSeeds is CreateFile  for `migration/seeds`
 var (
 	dir, _           = os.Getwd()
 	TargetMigrations = "migrations"
@@ -40,9 +40,9 @@ func getTableName(target string) string {
 	var name string
 
 	if target == TargetSeeds {
-		name = "seed_file"
+		name = "seedfile"
 	} else {
-		name = "migration_file"
+		name = "migrationfile"
 	}
 
 	return name
@@ -50,14 +50,14 @@ func getTableName(target string) string {
 
 // CreateFile generate `name.go` file and init to migration
 func CreateFile(filename string, target string) (output string, err error) {
-	templateBuf, err := ioutil.ReadFile(path.Join(dir, "/database/migrations/template.txt"))
+	templateBuf, err := ioutil.ReadFile(path.Join(dir, "/database/migration/template.txt"))
 	if err != nil {
 		return "", err
 	}
 
 	id := time.Now().Format(timestampFormat)
 	filename = fmt.Sprintf("%s_%s", id, filename)
-	relativePath := fmt.Sprintf("/database/migrations/%s", getTableName(target))
+	relativePath := fmt.Sprintf("/database/migration/%s", getTableName(target))
 	output = path.Join(dir, relativePath, fmt.Sprintf("%s.go", filename))
 	code := fmt.Sprintf(string(templateBuf), filename)
 

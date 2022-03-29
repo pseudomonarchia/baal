@@ -6,42 +6,52 @@ import (
 	"baal/database"
 	"baal/lib/logger"
 	"baal/router"
-	"context"
+	"baal/service"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/spf13/cobra"
-	"go.uber.org/fx"
 )
 
 var (
-	port      = 7001
-	debug     = false
+	debug     = config.Global.DEBUG
+	port      = config.Global.PORT
+	host      = config.Global.HOST
+	https     = config.Global.HTTPS
 	serverCmd = &cobra.Command{
 		Use:   "server",
 		Short: "Run Ball server for localhost",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			setENV()
-			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			app := fx.New(
-				fx.NopLogger,
-				config.Module,
-				logger.Module,
-				controller.Module,
-				router.Module,
-				database.Module,
-				fx.Invoke(serverStart),
-			)
+			conf := &config.GlobalConf{
+				DEBUG: debug,
+				PORT:  port,
+				HOST:  host,
+			}
 
-			err := app.Start(ctx)
-			defer app.Stop(ctx)
+			shotdown := make(chan os.Signal, 1)
+			signal.Notify(shotdown, syscall.SIGINT, syscall.SIGTERM)
+			config.Setup(conf)
+			logger.Setup()
+
+			db, err := database.New()
 			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
 				return err
 			}
 
-			<-app.Done()
+			services := service.New(db)
+			controllers := controller.New(services)
+			router := router.New(controllers)
+			srv := router.Serve(port)
+			logger.Log.Info(fmt.Sprintf("Server start on >>> %s port", strconv.Itoa(port)))
+
+			go srv.ListenAndServe()
+			<-shotdown
+
+			logger.Log.Info("Server shotdown")
 			return nil
 		},
 	}
@@ -49,27 +59,8 @@ var (
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
+	serverCmd.Flags().BoolVarP(&debug, "dev", "", debug, "Use debug/release mode")
+	serverCmd.Flags().StringVarP(&host, "host", "", host, "Server listent on host")
 	serverCmd.Flags().IntVarP(&port, "port", "p", port, "Server listent on port")
-	serverCmd.Flags().BoolVarP(&debug, "mode", "d", debug, "Use debug/release mode")
-}
-
-func serverStart(lc fx.Lifecycle, r *router.Router, log *logger.Logger) {
-	lc.Append(fx.Hook{
-		OnStart: func(ctx context.Context) error {
-			s, port := r.Serve()
-			log.Info(fmt.Sprintf("Server start on >>> %s port", port))
-
-			go s.ListenAndServe()
-			return nil
-		},
-		OnStop: func(ctx context.Context) error {
-			log.Info("Server shotdown")
-			return nil
-		},
-	})
-}
-
-func setENV() {
-	os.Setenv("PORT", strconv.Itoa(port))
-	os.Setenv("DEBUG", strconv.FormatBool(debug))
+	serverCmd.Flags().BoolVarP(&https, "https", "", https, "Use https protocol for host")
 }

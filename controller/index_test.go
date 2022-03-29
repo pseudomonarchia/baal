@@ -10,18 +10,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type response struct {
-	Services string `json:"services"`
-}
-
 func TestIndexStatus(t *testing.T) {
-	res, _ := json.Marshal(&response{"alive"})
+	expectedJSON, _ := json.Marshal(struct {
+		Services string `json:"services"`
+	}{
+		"alive",
+	})
+
 	w := httptest.NewRecorder()
-	r := test.MockRouter()
+	r := test.MockSrvRoute()
 	req, _ := http.NewRequest("GET", "/api/v1/", nil)
 
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, w.Body.String(), string(res))
+	assert.Equal(t, string(expectedJSON), w.Body.String())
 }
