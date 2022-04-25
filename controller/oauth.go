@@ -42,7 +42,7 @@ func (o *OAuth) LoginURL(c *gin.Context) {
 		Expires: expires,
 	})
 
-	url := o.Service.OAuth.GetLoginURL(OAuthState)
+	url := o.Service.OAuth.GetLoginURL(c.Request.Host, OAuthState)
 	c.JSON(http.StatusOK, gin.H{"url": url})
 }
 
@@ -88,7 +88,7 @@ func (o *OAuth) LoginCallBack(c *gin.Context) {
 		return
 	}
 
-	token, err := o.Service.OAuth.GetToken(query.Code)
+	token, err := o.Service.OAuth.GetToken(c.Request.Host, query.Code)
 	if err != nil {
 		rawQuery.Add("error_code", string(errorcode.OAuthTokenInvalid))
 		redirectURL.RawQuery = rawQuery.Encode()
@@ -96,7 +96,7 @@ func (o *OAuth) LoginCallBack(c *gin.Context) {
 		return
 	}
 
-	OAuthInfo, err := o.Service.OAuth.GetInfo(token)
+	OAuthInfo, err := o.Service.OAuth.GetInfo(c.Request.Host, token)
 	if err != nil {
 		rawQuery.Add("error_code", string(errorcode.OAuthTokenReject))
 		redirectURL.RawQuery = rawQuery.Encode()

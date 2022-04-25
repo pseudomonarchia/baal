@@ -14,12 +14,20 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	callbackURL  = "/api/v1/login/callback"
+	openIDScope  = "openid"
+	emailScope   = "https://www.googleapis.com/auth/userinfo.email"
+	profileScope = "https://www.googleapis.com/auth/userinfo.profile"
+	userinfoURL  = "https://www.googleapis.com/oauth2/v3/userinfo"
+)
+
 // OAuthFace OAuth service interface
 type OAuthFace interface {
 	NewState() string
-	GetLoginURL(state string) string
-	GetToken(code string) (*oauth2.Token, error)
-	GetInfo(token *oauth2.Token) (*model.GoogleOAuthUserInfo, error)
+	GetLoginURL(requestURL, state string) string
+	GetToken(requestURL, code string) (*oauth2.Token, error)
+	GetInfo(requestURL string, token *oauth2.Token) (*model.GoogleOAuthUserInfo, error)
 	SaveToken(userID uint, token *oauth2.Token) (*model.OAuthSchema, error)
 }
 
@@ -28,17 +36,18 @@ type OAuth struct {
 	Datebase *gorm.DB
 }
 
-func (o *OAuth) googleOAuth() *oauth2.Config {
-	redirectURL := fmt.Sprintf("%s/api/v1/login/callback", config.Global.URL())
+func (o *OAuth) googleOAuth(requestURL string) *oauth2.Config {
+	redirectURL := fmt.Sprintf("%s://%s%s", config.Global.PROTOCOL(), requestURL, callbackURL)
+
 	return &oauth2.Config{
-		ClientID:     "176852869927-31dtie98t8fj0fsmdc7g9em1o1mrkh95.apps.googleusercontent.com",
-		ClientSecret: "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",
+		ClientID:     config.Secret.Oauth.Google.ClientID,
+		ClientSecret: config.Secret.Oauth.Google.ClientSecret,
 		Endpoint:     google.Endpoint,
 		RedirectURL:  redirectURL,
 		Scopes: []string{
-			"openid",
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
+			openIDScope,
+			emailScope,
+			profileScope,
 		},
 	}
 }
@@ -52,19 +61,19 @@ func (*OAuth) NewState() string {
 }
 
 // GetLoginURL generate a login url
-func (o *OAuth) GetLoginURL(state string) string {
-	return o.googleOAuth().AuthCodeURL(state, oauth2.AccessTypeOffline)
+func (o *OAuth) GetLoginURL(requestURL, state string) string {
+	return o.googleOAuth(requestURL).AuthCodeURL(state, oauth2.AccessTypeOffline)
 }
 
 // GetToken bring in code to get token
-func (o *OAuth) GetToken(code string) (*oauth2.Token, error) {
-	return o.googleOAuth().Exchange(oauth2.NoContext, code)
+func (o *OAuth) GetToken(requestURL, code string) (*oauth2.Token, error) {
+	return o.googleOAuth(requestURL).Exchange(oauth2.NoContext, code)
 }
 
 // GetInfo carry token to get social user information
-func (o *OAuth) GetInfo(token *oauth2.Token) (*model.GoogleOAuthUserInfo, error) {
-	client := o.googleOAuth().Client(oauth2.NoContext, token)
-	res, _ := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
+func (o *OAuth) GetInfo(requestURL string, token *oauth2.Token) (*model.GoogleOAuthUserInfo, error) {
+	client := o.googleOAuth(requestURL).Client(oauth2.NoContext, token)
+	res, _ := client.Get(userinfoURL)
 	defer res.Body.Close()
 
 	user := &model.GoogleOAuthUserInfo{}

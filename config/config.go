@@ -1,51 +1,77 @@
 package config
 
 import (
-	"baal/lib/file"
-	"fmt"
 	"os"
 	"path"
-	"strconv"
 	"sync"
 
 	"github.com/spf13/viper"
+)
+
+var (
+	dir, _       = os.Getwd()
+	rootConfPath = path.Join(dir, "./config.yml")
 )
 
 // GlobalConf represents a global config struct
 type GlobalConf struct {
 	DEBUG bool
 	PORT  int
-	HOST  string
 	HTTPS bool
 }
 
-var (
-	dir, _          = os.Getwd()
-	defaultConfPath = path.Join(dir, "./config/conf.default.yml")
-	rootConfPath    = path.Join(dir, "./conf.yml")
-)
+type secretConf struct {
+	Oauth struct {
+		Google struct {
+			ClientID     string `mapstructure:"client_id"`
+			ClientSecret string `mapstructure:"client_secret"`
+		}
+	}
+	Database struct {
+		Mysql struct {
+			Username string
+			Database string
+			Addr     string
+			Port     int
+			Password string
+			Charset  string
+		}
+	}
+}
 
 // Global config infomation
-var Global *GlobalConf
+var Global GlobalConf
+
+// Secret secret infomation
+var Secret secretConf
+
 var once sync.Once
 
 func init() {
-	var global GlobalConf
+	viper.AutomaticEnv()
+	viper.SetConfigType("yaml")
+	viper.SetConfigFile(rootConfPath)
+	viper.ReadInConfig()
+	viper.Unmarshal(&Secret)
 
-	confPath := defaultConfPath
-	if file.IsExists(rootConfPath) {
-		confPath = rootConfPath
+	port, debug, https :=
+		viper.GetInt("PORT"),
+		viper.GetBool("DEBUG"),
+		viper.GetBool("HTTPS")
+
+	if port == 0 {
+		port = 7001
 	}
 
-	viper.SetConfigFile(confPath)
-	viper.ReadInConfig()
-	viper.Unmarshal(&global)
-
-	Global = &global
+	Global = GlobalConf{
+		DEBUG: debug,
+		PORT:  port,
+		HTTPS: https,
+	}
 }
 
 // Setup override default configuration
-func Setup(conf *GlobalConf) {
+func Setup(conf GlobalConf) {
 	once.Do(func() {
 		Global = conf
 	})
@@ -56,17 +82,12 @@ func (c *GlobalConf) IsDev() bool {
 	return c.DEBUG
 }
 
-// URL get local service address
-func (c *GlobalConf) URL() string {
+// PROTOCOL get local service url protocol
+func (c *GlobalConf) PROTOCOL() string {
 	protocol := "http"
 	if c.HTTPS {
 		protocol = "https"
 	}
 
-	return fmt.Sprintf(
-		"%s://%s:%s",
-		protocol,
-		c.HOST,
-		strconv.Itoa(c.PORT),
-	)
+	return protocol
 }

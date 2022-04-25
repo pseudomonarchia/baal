@@ -15,13 +15,13 @@ type OAuthFace struct {
 	mock.Mock
 }
 
-// GetInfo provides a mock function with given fields: token
-func (_m *OAuthFace) GetInfo(token *oauth2.Token) (*model.GoogleOAuthUserInfo, error) {
-	ret := _m.Called(token)
+// GetInfo provides a mock function with given fields: requestURL, token
+func (_m *OAuthFace) GetInfo(requestURL string, token *oauth2.Token) (*model.GoogleOAuthUserInfo, error) {
+	ret := _m.Called(requestURL, token)
 
 	var r0 *model.GoogleOAuthUserInfo
-	if rf, ok := ret.Get(0).(func(*oauth2.Token) *model.GoogleOAuthUserInfo); ok {
-		r0 = rf(token)
+	if rf, ok := ret.Get(0).(func(string, *oauth2.Token) *model.GoogleOAuthUserInfo); ok {
+		r0 = rf(requestURL, token)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.GoogleOAuthUserInfo)
@@ -29,8 +29,8 @@ func (_m *OAuthFace) GetInfo(token *oauth2.Token) (*model.GoogleOAuthUserInfo, e
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*oauth2.Token) error); ok {
-		r1 = rf(token)
+	if rf, ok := ret.Get(1).(func(string, *oauth2.Token) error); ok {
+		r1 = rf(requestURL, token)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -38,13 +38,13 @@ func (_m *OAuthFace) GetInfo(token *oauth2.Token) (*model.GoogleOAuthUserInfo, e
 	return r0, r1
 }
 
-// GetLoginURL provides a mock function with given fields: state
-func (_m *OAuthFace) GetLoginURL(state string) string {
-	ret := _m.Called(state)
+// GetLoginURL provides a mock function with given fields: requestURL, state
+func (_m *OAuthFace) GetLoginURL(requestURL string, state string) string {
+	ret := _m.Called(requestURL, state)
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(string) string); ok {
-		r0 = rf(state)
+	if rf, ok := ret.Get(0).(func(string, string) string); ok {
+		r0 = rf(requestURL, state)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
@@ -52,13 +52,13 @@ func (_m *OAuthFace) GetLoginURL(state string) string {
 	return r0
 }
 
-// GetToken provides a mock function with given fields: code
-func (_m *OAuthFace) GetToken(code string) (*oauth2.Token, error) {
-	ret := _m.Called(code)
+// GetToken provides a mock function with given fields: requestURL, code
+func (_m *OAuthFace) GetToken(requestURL string, code string) (*oauth2.Token, error) {
+	ret := _m.Called(requestURL, code)
 
 	var r0 *oauth2.Token
-	if rf, ok := ret.Get(0).(func(string) *oauth2.Token); ok {
-		r0 = rf(code)
+	if rf, ok := ret.Get(0).(func(string, string) *oauth2.Token); ok {
+		r0 = rf(requestURL, code)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*oauth2.Token)
@@ -66,8 +66,8 @@ func (_m *OAuthFace) GetToken(code string) (*oauth2.Token, error) {
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(code)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(requestURL, code)
 	} else {
 		r1 = ret.Error(1)
 	}

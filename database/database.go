@@ -1,6 +1,7 @@
 package database
 
 import (
+	"baal/config"
 	"fmt"
 	"time"
 
@@ -10,12 +11,6 @@ import (
 )
 
 const (
-	username     = "baal"
-	password     = "YU-nGz_i]APX3_AF"
-	addr         = "127.0.0.1"
-	port         = 3306
-	database     = "baal"
-	charset      = "utf8"
 	maxLifeTime  = 10
 	maxOpenConns = 10
 	maxIdleConns = 10
@@ -29,12 +24,12 @@ func New() (*gorm.DB, error) {
 
 	s := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True",
-		username,
-		password,
-		addr,
-		port,
-		database,
-		charset,
+		config.Secret.Database.Mysql.Username,
+		config.Secret.Database.Mysql.Password,
+		config.Secret.Database.Mysql.Addr,
+		config.Secret.Database.Mysql.Port,
+		config.Secret.Database.Mysql.Database,
+		config.Secret.Database.Mysql.Charset,
 	)
 
 	conn, err := gorm.Open(mysql.Open(s), conf)

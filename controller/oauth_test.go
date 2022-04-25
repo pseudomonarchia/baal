@@ -26,7 +26,7 @@ func TestLoginURL(t *testing.T) {
 
 	state := "state_string"
 	OAuthService.On("NewState").Return(state)
-	OAuthService.On("GetLoginURL", state).Return("")
+	OAuthService.On("GetLoginURL", "", state).Return("")
 
 	t.Run("Does not carry query redirect return failure", func(t *testing.T) {
 		w := httptest.NewRecorder()
@@ -65,7 +65,7 @@ func TestLoginCallBack(t *testing.T) {
 	userService := &mocks.UserFace{}
 	state := "state_string"
 	OAuthService.On("NewState").Return(state)
-	OAuthService.On("GetLoginURL", state).Return("")
+	OAuthService.On("GetLoginURL", "", state).Return("")
 
 	r := test.MockSrvRoute(OAuthService, userService)
 	apiURL := &url.URL{Path: "/api/v1/login/callback"}
@@ -141,7 +141,7 @@ func TestLoginCallBack(t *testing.T) {
 
 	t.Run("OAuth get token error return failure", func(t *testing.T) {
 		codeStr := "code"
-		OAuthService.On("GetToken", codeStr).Return(nil, errors.New("Token Error")).Once()
+		OAuthService.On("GetToken", "", codeStr).Return(nil, errors.New("Token Error")).Once()
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
@@ -174,8 +174,8 @@ func TestLoginCallBack(t *testing.T) {
 	t.Run("Get OAuth info error return failure", func(t *testing.T) {
 		codeStr := "code"
 		OAuthToken := &oauth2.Token{}
-		OAuthService.On("GetToken", codeStr).Return(OAuthToken, nil).Once()
-		OAuthService.On("GetInfo", OAuthToken).Return(nil, errors.New("Token Info Error")).Once()
+		OAuthService.On("GetToken", "", codeStr).Return(OAuthToken, nil).Once()
+		OAuthService.On("GetInfo", "", OAuthToken).Return(nil, errors.New("Token Info Error")).Once()
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
@@ -208,8 +208,8 @@ func TestLoginCallBack(t *testing.T) {
 	t.Run("Not found user return failure", func(t *testing.T) {
 		codeStr := "code"
 		OAuthToken := &oauth2.Token{}
-		OAuthService.On("GetToken", codeStr).Return(OAuthToken, nil).Once()
-		OAuthService.On("GetInfo", OAuthToken).Return(&model.GoogleOAuthUserInfo{}, nil).Once()
+		OAuthService.On("GetToken", "", codeStr).Return(OAuthToken, nil).Once()
+		OAuthService.On("GetInfo", "", OAuthToken).Return(&model.GoogleOAuthUserInfo{}, nil).Once()
 		userService.On("GetByQuery", &model.UserSchema{}).Return(nil, true).Once()
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
@@ -245,8 +245,8 @@ func TestLoginCallBack(t *testing.T) {
 		OAuthToken := &oauth2.Token{}
 		userData := &model.UserSchema{}
 		OAuthData := &model.OAuthSchema{}
-		OAuthService.On("GetToken", codeStr).Return(OAuthToken, nil).Once()
-		OAuthService.On("GetInfo", OAuthToken).Return(&model.GoogleOAuthUserInfo{}, nil).Once()
+		OAuthService.On("GetToken", "", codeStr).Return(OAuthToken, nil).Once()
+		OAuthService.On("GetInfo", "", OAuthToken).Return(&model.GoogleOAuthUserInfo{}, nil).Once()
 		userService.On("GetByQuery", userData).Return(userData, false).Once()
 		OAuthService.On("SaveToken", userData.ID, OAuthToken).Return(OAuthData, nil)
 		w := httptest.NewRecorder()

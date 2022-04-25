@@ -19,16 +19,14 @@ import (
 var (
 	debug     = config.Global.DEBUG
 	port      = config.Global.PORT
-	host      = config.Global.HOST
 	https     = config.Global.HTTPS
 	serverCmd = &cobra.Command{
 		Use:   "server",
 		Short: "Run Ball server for localhost",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			conf := &config.GlobalConf{
+			conf := config.GlobalConf{
 				DEBUG: debug,
 				PORT:  port,
-				HOST:  host,
 			}
 
 			shotdown := make(chan os.Signal, 1)
@@ -46,7 +44,7 @@ var (
 			controllers := controller.New(services)
 			router := router.New(controllers)
 			srv := router.Serve(port)
-			logger.Log.Info(fmt.Sprintf("Server start on >>> %s port", strconv.Itoa(port)))
+			logger.Log.Info(fmt.Sprintf("Server start on >>> %s port", strconv.Itoa(conf.PORT)))
 
 			go srv.ListenAndServe()
 			<-shotdown
@@ -60,7 +58,6 @@ var (
 func init() {
 	rootCmd.AddCommand(serverCmd)
 	serverCmd.Flags().BoolVarP(&debug, "dev", "", debug, "Use debug/release mode")
-	serverCmd.Flags().StringVarP(&host, "host", "", host, "Server listent on host")
 	serverCmd.Flags().IntVarP(&port, "port", "p", port, "Server listent on port")
 	serverCmd.Flags().BoolVarP(&https, "https", "", https, "Use https protocol for host")
 }
