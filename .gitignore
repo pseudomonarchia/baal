@@ -9,3 +9,6 @@ gin-bin
 
 # build cmd file
 baal
+
+# config file
+config.yml

@@ -1,0 +1,6 @@
+.git/
+*.md
+config.yml
+config.example.yml
+Dockerfile
+vendor/
