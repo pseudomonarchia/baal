@@ -1,0 +1,11 @@
+oauth:
+  google:
+    client_id:
+    client_secret:
+database:
+  mysql:
+    username:
+    database:
+    addr:
+    port:
+    password:
