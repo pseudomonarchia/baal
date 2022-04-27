@@ -12,3 +12,6 @@ baal
 
 # config file
 config.yml
+
+# env file
+.env

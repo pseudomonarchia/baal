@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"path"
+	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -51,7 +53,7 @@ func init() {
 	viper.SetConfigType("yaml")
 	viper.SetConfigFile(rootConfPath)
 	viper.ReadInConfig()
-	viper.Unmarshal(&Secret)
+	viper.Unmarshal(&Secret, viper.DecodeHook(decodeHook))
 
 	port, debug, https :=
 		viper.GetInt("PORT"),
@@ -67,6 +69,20 @@ func init() {
 		PORT:  port,
 		HTTPS: https,
 	}
+}
+
+func decodeHook(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+	if f.Kind() == reflect.String {
+		stringData := data.(string)
+		if strings.HasPrefix(stringData, "${") && strings.HasSuffix(stringData, "}") {
+			envVarValue := os.Getenv(strings.TrimPrefix(strings.TrimSuffix(stringData, "}"), "${"))
+			if len(envVarValue) > 0 {
+				return envVarValue, nil
+			}
+		}
+	}
+
+	return data, nil
 }
 
 // Setup override default configuration
