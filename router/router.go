@@ -33,6 +33,7 @@ func New(c *controller.Controllers) *Router {
 		gin.Recovery(),
 	)
 
+	r.GET("/health", c.Health.Check)
 	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
 
 	api := r.Group("api")
