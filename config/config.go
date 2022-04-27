@@ -34,7 +34,6 @@ type secretConf struct {
 			Addr     string
 			Port     int
 			Password string
-			Charset  string
 		}
 	}
 }

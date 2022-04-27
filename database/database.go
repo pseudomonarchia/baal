@@ -23,13 +23,12 @@ func New() (*gorm.DB, error) {
 	}
 
 	s := fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True",
+		"%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True",
 		config.Secret.Database.Mysql.Username,
 		config.Secret.Database.Mysql.Password,
 		config.Secret.Database.Mysql.Addr,
 		config.Secret.Database.Mysql.Port,
 		config.Secret.Database.Mysql.Database,
-		config.Secret.Database.Mysql.Charset,
 	)
 
 	conn, err := gorm.Open(mysql.Open(s), conf)
