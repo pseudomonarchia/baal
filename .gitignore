@@ -3,6 +3,7 @@ vendor
 
 # test cover file
 *.test.out
+coverage.html
 
 # gin cli build file
 gin-bin

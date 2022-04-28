@@ -1,0 +1,40 @@
+PROJECT_NAME := "baal"
+PKG_LIST := $(shell go list ./... | grep -v /vendor/)
+GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
+
+.PHONY: all dep build clean test coverage coverhtml lint
+
+all: build
+
+test: ## Run unittests
+	@go test -short ${PKG_LIST}
+
+race: dep ## Run data race detector
+	@go test -race -short ${PKG_LIST}
+
+msan: dep ## Run memory sanitizer
+	@go test -msan -short ${PKG_LIST}
+
+dep: ## Get the dependencies
+	chmod u+x ./bin/tools/*.sh
+	@go get -v -d ./...
+
+build: dep ## Build the binary file
+	@go build -a -installsuffix cgo -ldflags "-w -s" -o $(PROJECT_NAME)
+
+clean: ## Remove previous build
+	@rm -f $(PROJECT_NAME)
+
+coverage: ## Generate global code coverage report
+	./bin/tools/coverage.sh;
+
+coverhtml: ## Generate global code coverage report in HTML
+	./bin/tools/coverage.sh html;
+
+help: ## Display this help screen
+	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	awk 'BEGIN {FS = ":.*?## "}; \
+	{printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+# lint: ## Lint the files
+# 	@golint -set_exit_status ${PKG_LIST}
