@@ -1,0 +1,11 @@
+oauth:
+  google:
+    client_id: ${BAAL_OAUTH_GOOGLE_CLIENT_ID}
+    client_secret: ${BAAL_OAUTH_GOOGLE_CLIENT_SECRET}
+database:
+  mysql:
+    username: baal
+    database: baal
+    addr: ${BAAL_MYSQL_HOST}
+    port: ${BAAL_MYSQL_PORT}
+    password: ${BAAL_MYSQL_PASSWORD}

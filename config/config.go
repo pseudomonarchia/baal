@@ -63,7 +63,7 @@ func init() {
 		viper.GetBool("HTTPS")
 
 	if port == 0 {
-		port = 7001
+		port = 8080
 	}
 
 	Global = GlobalConf{

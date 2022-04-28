@@ -61,7 +61,7 @@ services:
     volumes:
       - ./.env:/.env
       - ./config.yml:/config.yml
-    command: [ "migrate", "up" ]
+    command: [ "baal", "migrate", "up" ]
   backend:
     build:
       context: .
@@ -73,18 +73,17 @@ services:
       migrate:
         condition: service_completed_successfully
     ports:
-      - 7001:7001
+      - 8080:8080
     networks:
       - baal-net
     environment:
       TZ: Asia/Taipei
-      PORT: 7001
+      PORT: 8080
     volumes:
       - ./.env:/.env
-      - ./config.yml:/config.yml
-    command: [ "server" ]
+    command: [ "baal", "server" ]
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:7001/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 10s
       timeout: 10s
       start_period: 10s

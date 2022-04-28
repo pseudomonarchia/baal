@@ -5,6 +5,7 @@ RUN apk add --no-cache ca-certificates
 COPY . $GOPATH/src/solomon72/baal
 WORKDIR $GOPATH/src/solomon72/baal
 
+COPY ./config.yml /config.yml
 RUN go get -d -v
 RUN CGO_ENABLED=0 \ 
   GOOS=linux \ 
@@ -13,11 +14,12 @@ RUN CGO_ENABLED=0 \
 
 FROM scratch as runner
 
-ARG PORT=7001
+ARG PORT=8080
 ENV PORT=${PORT}
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /config.yml /config.yml
 COPY --from=builder /go/bin/baal /bin/baal
 
 EXPOSE ${PORT}
-ENTRYPOINT ["bin/baal"]
+CMD ["baal", "server"]
