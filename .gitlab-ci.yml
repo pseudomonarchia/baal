@@ -84,7 +84,6 @@ Publish:
       --image $IMAGE:latest
       --region $GCP_REGION
       --platform managed
-      --allow-unauthenticated
       --update-secrets=BAAL_MYSQL_HOST=BAAL_MYSQL_HOST:latest
       --update-secrets=BAAL_MYSQL_PORT=BAAL_MYSQL_PORT:latest
       --update-secrets=BAAL_MYSQL_PASSWORD=BAAL_MYSQL_PASSWORD:latest
