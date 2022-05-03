@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"reflect"
@@ -51,6 +52,8 @@ var Secret secretConf
 var once sync.Once
 
 func init() {
+	fmt.Println("DIR:", dir)
+
 	viper.AutomaticEnv()
 	viper.SetConfigType("yaml")
 	viper.SetConfigFile(rootConfPath)
