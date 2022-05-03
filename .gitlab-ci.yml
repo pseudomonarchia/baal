@@ -84,6 +84,10 @@ Publish:
       --image $IMAGE:latest
       --region $GCP_REGION
       --platform managed
+      --ingress internal-and-cloud-load-balancing
+      --max-instances 3
+      --labels app=baal
+      --set-cloudsql-instances solomon72:$GCP_REGION:baal-sql
       --update-secrets=BAAL_MYSQL_HOST=BAAL_MYSQL_HOST:latest
       --update-secrets=BAAL_MYSQL_PORT=BAAL_MYSQL_PORT:latest
       --update-secrets=BAAL_MYSQL_PASSWORD=BAAL_MYSQL_PASSWORD:latest
