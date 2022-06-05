@@ -43,7 +43,7 @@ func (o *OAuth) LoginURL(c *gin.Context) {
 	})
 
 	url := o.Service.OAuth.GetLoginURL(c.Request.Host, OAuthState)
-	c.JSON(http.StatusOK, gin.H{"url": url})
+	c.Redirect(http.StatusSeeOther, url)
 }
 
 // LoginCallBack get sso login callback

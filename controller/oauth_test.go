@@ -46,16 +46,9 @@ func TestLoginURL(t *testing.T) {
 		apiURL.RawQuery = query.Encode()
 
 		req, _ := http.NewRequest("GET", apiURL.String(), nil)
-		expectedJSON, _ := json.Marshal(struct {
-			URL string `json:"url"`
-		}{
-			"",
-		})
-
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
-		assert.Equal(string(expectedJSON), w.Body.String())
+		assert.Equal(http.StatusSeeOther, w.Code)
 	})
 }
 
@@ -91,7 +84,7 @@ func TestLoginCallBack(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
+		assert.Equal(http.StatusSeeOther, w.Code)
 
 		req, _ = http.NewRequest("GET", apiURL.String(), nil)
 		for _, cookie := range w.Result().Cookies() {
@@ -113,7 +106,7 @@ func TestLoginCallBack(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
+		assert.Equal(http.StatusSeeOther, w.Code)
 
 		OAuthQuery := &url.Values{}
 		OAuthQuery.Add("state", "state")
@@ -145,7 +138,7 @@ func TestLoginCallBack(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
+		assert.Equal(http.StatusSeeOther, w.Code)
 
 		OAuthQuery := &url.Values{}
 		OAuthQuery.Add("state", state)
@@ -179,7 +172,7 @@ func TestLoginCallBack(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
+		assert.Equal(http.StatusSeeOther, w.Code)
 
 		OAuthQuery := &url.Values{}
 		OAuthQuery.Add("state", state)
@@ -214,7 +207,7 @@ func TestLoginCallBack(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
+		assert.Equal(http.StatusSeeOther, w.Code)
 
 		OAuthQuery := &url.Values{}
 		OAuthQuery.Add("state", state)
@@ -252,7 +245,7 @@ func TestLoginCallBack(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
-		assert.Equal(http.StatusOK, w.Code)
+		assert.Equal(http.StatusSeeOther, w.Code)
 
 		OAuthQuery := &url.Values{}
 		OAuthQuery.Add("state", state)
