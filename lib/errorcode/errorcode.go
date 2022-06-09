@@ -14,16 +14,22 @@ type errServerType errBasicType
 const (
 	Basic errBasicType = "000-00000"
 
-	AuthorizeBasic    errAuthorizeType = "001-00000"
-	OAuthStateInvalid errAuthorizeType = "001-00001"
-	OAuthTokenInvalid errAuthorizeType = "001-00002"
-	OAuthTokenReject  errAuthorizeType = "001-00003"
+	AuthorizeBasic          errAuthorizeType = "001-00000"
+	OAuthStateInvalid       errAuthorizeType = "001-00001"
+	OAuthTokenInvalid       errAuthorizeType = "001-00002"
+	OAuthTokenReject        errAuthorizeType = "001-00003"
+	OAuthLoginFailed        errAuthorizeType = "001-00004"
+	OAuthTokenFormatInvalid errAuthorizeType = "001-00005"
+	OAuthTokenNotFound      errAuthorizeType = "001-00006"
+	OAuthIssuedIPFailed     errAuthorizeType = "001-00007"
 
 	ForbiddenBasic errForbiddenType = "002-00000"
+	UserDisabled   errForbiddenType = "002-00001"
 
-	ParamaterBasic            errParameterType = "003-00000"
+	ParameterBasic            errParameterType = "003-00000"
 	OAuthRequestQueryInvalid  errParameterType = "003-00001"
 	OAuthResponseQueryInvalid errParameterType = "003-00002"
+	LoginRequestBodyInvalid   errParameterType = "003-00003"
 
 	NotFoundBasic     errNotFoundType = "004-30000"
 	NotFoundOAuthUser errNotFoundType = "004-30001"

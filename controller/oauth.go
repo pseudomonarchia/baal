@@ -2,14 +2,19 @@ package controller
 
 import (
 	"baal/lib/errorcode"
+	"baal/lib/header"
 	"baal/model"
 	"baal/service"
+	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v4"
+	"gorm.io/gorm"
 )
 
 // OAuth ...
@@ -22,9 +27,8 @@ func (o *OAuth) LoginURL(c *gin.Context) {
 	query := &model.GoogleOAuthRequest{}
 	_ = c.ShouldBindQuery(query)
 	if _, ok := validator.New().Struct(query).(validator.ValidationErrors); ok {
-		ec := errorcode.OAuthRequestQueryInvalid
-		code := errorcode.GetHTTPCode(ec)
-		c.JSON(code, model.ErrorResponse{ErrorCode: ec})
+		redirectURL, _ := url.Parse(c.GetHeader(header.Origin))
+		ThrowErrorRedirect(c, redirectURL, errorcode.OAuthRequestQueryInvalid)
 		return
 	}
 
@@ -68,52 +72,146 @@ func (o *OAuth) LoginCallBack(c *gin.Context) {
 	})
 
 	if errWithRedirect != nil {
-		ec := errorcode.ServerBasic
-		code := errorcode.GetHTTPCode(ec)
-		c.JSON(code, model.ErrorResponse{ErrorCode: ec})
+		ThrowErrorRedirect(c, redirectURL, errorcode.ServerBasic)
 		return
 	}
 
 	if _, ok := validator.New().Struct(query).(validator.ValidationErrors); ok {
-		rawQuery.Add("error_code", string(errorcode.OAuthResponseQueryInvalid))
-		redirectURL.RawQuery = rawQuery.Encode()
-		c.Redirect(http.StatusSeeOther, redirectURL.String())
+		ThrowErrorRedirect(c, redirectURL, errorcode.OAuthResponseQueryInvalid)
 		return
 	}
 
 	if errWithState != nil || query.State != OAuthState {
-		rawQuery.Add("error_code", string(errorcode.OAuthStateInvalid))
-		redirectURL.RawQuery = rawQuery.Encode()
-		c.Redirect(http.StatusSeeOther, redirectURL.String())
+		ThrowErrorRedirect(c, redirectURL, errorcode.OAuthStateInvalid)
 		return
 	}
 
 	token, err := o.Service.OAuth.GetToken(c.Request.Host, query.Code)
 	if err != nil {
-		rawQuery.Add("error_code", string(errorcode.OAuthTokenInvalid))
-		redirectURL.RawQuery = rawQuery.Encode()
-		c.Redirect(http.StatusSeeOther, redirectURL.String())
+		ThrowErrorRedirect(c, redirectURL, errorcode.OAuthTokenInvalid)
 		return
 	}
 
 	OAuthInfo, err := o.Service.OAuth.GetInfo(c.Request.Host, token)
 	if err != nil {
-		rawQuery.Add("error_code", string(errorcode.OAuthTokenReject))
-		redirectURL.RawQuery = rawQuery.Encode()
-		c.Redirect(http.StatusSeeOther, redirectURL.String())
+		ThrowErrorRedirect(c, redirectURL, errorcode.OAuthTokenReject)
 		return
 	}
 
-	user, notExist := o.Service.User.GetByQuery(&model.UserSchema{Email: OAuthInfo.Email})
-	if notExist {
-		rawQuery.Add("error_code", string(errorcode.NotFoundOAuthUser))
-		redirectURL.RawQuery = rawQuery.Encode()
-		c.Redirect(http.StatusSeeOther, redirectURL.String())
+	userRef, err := o.Service.User.GetByQuery(&model.UserSchema{Email: OAuthInfo.Email})
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		ThrowErrorRedirect(c, redirectURL, errorcode.NotFoundOAuthUser)
 		return
 	}
 
-	OAuthRef, err := o.Service.OAuth.SaveToken(user.ID, token)
+	if !userRef.Enable {
+		ThrowErrorRedirect(c, redirectURL, errorcode.UserDisabled)
+		return
+	}
+
+	UID := o.Service.OAuth.GenerateUID()
+	OAuthRef, err := o.Service.OAuth.SaveToken(userRef.ID, UID, token)
 	rawQuery.Add("code", OAuthRef.UID)
 	redirectURL.RawQuery = rawQuery.Encode()
 	c.Redirect(http.StatusSeeOther, redirectURL.String())
+}
+
+// Token ...
+func (o *OAuth) Token(c *gin.Context) {
+	body := &model.TokenRequest{}
+	_ = c.ShouldBindJSON(body)
+	if _, ok := validator.New().Struct(body).(validator.ValidationErrors); ok {
+		ThrowError(c, errorcode.LoginRequestBodyInvalid)
+		return
+	}
+
+	switch body.GrantType {
+	case model.GrantTypeFromCode:
+		OAuthRef := o.Service.OAuth.FindToken(body.Code)
+		if OAuthRef == nil {
+			ThrowError(c, errorcode.OAuthLoginFailed)
+			return
+		}
+
+		token, _ := OAuthRef.UnmarshalToken()
+		payload := &jwt.StandardClaims{
+			Issuer:    c.Request.Host,
+			Subject:   c.GetHeader(header.Origin),
+			Audience:  strconv.Itoa(int(OAuthRef.UserID)),
+			Id:        OAuthRef.UID,
+			ExpiresAt: token.Expiry.Unix(),
+			IssuedAt:  time.Now().Unix(),
+			NotBefore: time.Now().Unix(),
+		}
+
+		refreshRef, _ := o.Service.OAuth.GenerateRefreshToken(OAuthRef, c.ClientIP())
+		res := &model.TokenSchema{
+			AccessToken:  o.Service.OAuth.SignToken(payload, &OAuthRef.TokenInfo),
+			Expiry:       token.Expiry,
+			TokenType:    token.TokenType,
+			RefreshToken: refreshRef.Token,
+		}
+
+		c.JSON(http.StatusCreated, res)
+		break
+	case model.GrantTypeFromRefreshToken:
+		a := c.GetHeader(header.Authorization)
+		t, ok := o.Service.OAuth.CheckTokenAndReplace(a)
+		if !ok {
+			ThrowError(c, errorcode.OAuthTokenFormatInvalid)
+			return
+		}
+
+		payload, err := o.Service.OAuth.DecodeToken(t)
+		if err != nil {
+			ThrowError(c, errorcode.OAuthTokenFormatInvalid)
+			return
+		}
+
+		refreshRef, err := o.Service.OAuth.FindRefreshTokenFormUID(body.Code, payload.Id)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ThrowError(c, errorcode.OAuthTokenNotFound)
+			return
+		}
+
+		if IP := c.ClientIP(); refreshRef.IP != IP {
+			ThrowError(c, errorcode.OAuthIssuedIPFailed)
+			return
+		}
+
+		if !refreshRef.OAuthToken.User.Enable {
+			ThrowError(c, errorcode.UserDisabled)
+			return
+		}
+
+		validate, err := o.Service.OAuth.ValidateToken(t, &refreshRef.OAuthToken.TokenInfo)
+		tokenExpired := errors.Is(err, jwt.ErrTokenExpired)
+		if !validate && !tokenExpired {
+			ThrowError(c, errorcode.OAuthTokenInvalid)
+			return
+		}
+
+		token, _ := refreshRef.OAuthToken.UnmarshalToken()
+		token, err = o.Service.OAuth.RefreshToken(c.Request.Host, token)
+		if err != nil {
+			ThrowError(c, errorcode.OAuthTokenReject)
+			return
+		}
+
+		OAuthRef, _ := o.Service.OAuth.SaveToken(refreshRef.OAuthToken.UserID, refreshRef.OAuthUID, token)
+		refreshRef, _ = o.Service.OAuth.GenerateRefreshToken(OAuthRef, c.ClientIP())
+
+		payload.ExpiresAt = token.Expiry.Unix()
+		payload.IssuedAt = time.Now().Unix()
+		payload.NotBefore = time.Now().Unix()
+
+		res := &model.TokenSchema{
+			AccessToken:  o.Service.OAuth.SignToken(payload, &OAuthRef.TokenInfo),
+			Expiry:       token.Expiry,
+			TokenType:    token.TokenType,
+			RefreshToken: refreshRef.Token,
+		}
+
+		c.JSON(http.StatusCreated, res)
+	}
 }

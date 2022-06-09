@@ -5,7 +5,6 @@ import (
 	"baal/model"
 	"baal/service/mocks"
 	"baal/test"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -15,13 +14,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
+	"gorm.io/gorm"
 )
 
 func TestLoginURL(t *testing.T) {
 	assert := assert.New(t)
 	OAuthService := &mocks.OAuthFace{}
 	r := test.MockSrvRoute(OAuthService)
-	apiURL := &url.URL{Path: "/api/v1/login"}
+	apiURL := &url.URL{Path: "/api/v1/oauth"}
 	redirectURL := &url.URL{Scheme: "http", Host: "127.0.0.1"}
 
 	state := "state_string"
@@ -31,13 +31,13 @@ func TestLoginURL(t *testing.T) {
 	t.Run("Does not carry query redirect return failure", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", apiURL.String(), nil)
-		e := errorcode.OAuthRequestQueryInvalid
-		resStatus := errorcode.GetHTTPCode(e)
-		expectedJSON, _ := json.Marshal(model.ErrorResponse{ErrorCode: e})
 
 		r.ServeHTTP(w, req)
-		assert.Equal(resStatus, w.Code)
-		assert.Equal(string(expectedJSON), w.Body.String())
+
+		errorQuery := &url.Values{}
+		errorQuery.Add("error_code", string(errorcode.OAuthRequestQueryInvalid))
+		redirectURL.RawQuery = errorQuery.Encode()
+		assert.Equal(http.StatusSeeOther, w.Code)
 	})
 
 	t.Run("Carry query redirect return success", func(t *testing.T) {
@@ -61,23 +61,18 @@ func TestLoginCallBack(t *testing.T) {
 	OAuthService.On("GetLoginURL", "", state).Return("")
 
 	r := test.MockSrvRoute(OAuthService, userService)
-	apiURL := &url.URL{Path: "/api/v1/login/callback"}
+	apiURL := &url.URL{Path: "/api/v1/oauth/callback"}
 	redirectURL := url.URL{Scheme: "http", Host: "127.0.0.1"}
 	preAPIURL := &url.URL{
-		Path:     "/api/v1/login",
+		Path:     "/api/v1/oauth",
 		RawQuery: fmt.Sprintf("redirect=%s", redirectURL.String()),
 	}
 
 	t.Run("Not get login url return failure", func(t *testing.T) {
 		req, _ := http.NewRequest("GET", apiURL.String(), nil)
-		e := errorcode.ServerBasic
-		expectedCode := errorcode.GetHTTPCode(e)
-		expectedJSON, _ := json.Marshal(model.ErrorResponse{ErrorCode: e})
-
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
-		assert.Equal(expectedCode, w.Code)
-		assert.Equal(string(expectedJSON), w.Body.String())
+		assert.Equal(http.StatusSeeOther, w.Code)
 	})
 
 	t.Run("OAuth query invalid return failure", func(t *testing.T) {
@@ -203,7 +198,7 @@ func TestLoginCallBack(t *testing.T) {
 		OAuthToken := &oauth2.Token{}
 		OAuthService.On("GetToken", "", codeStr).Return(OAuthToken, nil).Once()
 		OAuthService.On("GetInfo", "", OAuthToken).Return(&model.GoogleOAuthUserInfo{}, nil).Once()
-		userService.On("GetByQuery", &model.UserSchema{}).Return(nil, true).Once()
+		userService.On("GetByQuery", &model.UserSchema{}).Return(nil, gorm.ErrRecordNotFound).Once()
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
@@ -235,13 +230,15 @@ func TestLoginCallBack(t *testing.T) {
 
 	t.Run("Other conditions represent success", func(t *testing.T) {
 		codeStr := "code"
+		UID := "UID"
 		OAuthToken := &oauth2.Token{}
 		userData := &model.UserSchema{}
-		OAuthData := &model.OAuthSchema{}
+		OAuthData := &model.OAuthTokenSchema{}
 		OAuthService.On("GetToken", "", codeStr).Return(OAuthToken, nil).Once()
 		OAuthService.On("GetInfo", "", OAuthToken).Return(&model.GoogleOAuthUserInfo{}, nil).Once()
-		userService.On("GetByQuery", userData).Return(userData, false).Once()
-		OAuthService.On("SaveToken", userData.ID, OAuthToken).Return(OAuthData, nil)
+		userService.On("GetByQuery", userData).Return(&model.UserSchema{Enable: true}, nil).Once()
+		OAuthService.On("GenerateUID").Return(UID).Once()
+		OAuthService.On("SaveToken", userData.ID, UID, OAuthToken).Return(OAuthData, nil).Once()
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)

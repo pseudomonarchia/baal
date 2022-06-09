@@ -6,6 +6,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// UserTable ...
+const UserTable = "user"
+
 // UserSchema for GORM
 type UserSchema struct {
 	ID        uint   `gorm:"primaryKey;autoIncrement"`
@@ -20,5 +23,5 @@ type UserSchema struct {
 
 // TableName is GORM hook
 func (*UserSchema) TableName() string {
-	return "user"
+	return UserTable
 }

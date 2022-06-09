@@ -2,24 +2,23 @@ package service
 
 import (
 	"baal/model"
-	"errors"
 
 	"gorm.io/gorm"
 )
 
 // UserFace User service interface
 type UserFace interface {
-	GetByQuery(m *model.UserSchema) (*model.UserSchema, bool)
+	GetByQuery(m *model.UserSchema) (*model.UserSchema, error)
 }
 
 // User ...
 type User struct {
-	Datebase *gorm.DB
+	Database *gorm.DB
 }
 
 // GetByQuery fetch user data by query
-func (u *User) GetByQuery(m *model.UserSchema) (*model.UserSchema, bool) {
+func (u *User) GetByQuery(m *model.UserSchema) (*model.UserSchema, error) {
 	user := &model.UserSchema{}
-	r := u.Datebase.First(user, m)
-	return user, errors.Is(r.Error, gorm.ErrRecordNotFound)
+	err := u.Database.Take(user).Error
+	return user, err
 }

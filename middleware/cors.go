@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"baal/lib/header"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -16,14 +17,19 @@ var (
 		"OPTIONS",
 	}
 	headers = []string{
-		"Content-Type",
-		"Upgrade",
-		"Origin",
-		"Connection",
-		"Accept-Encoding",
-		"Accept-Language",
-		"Host",
-		"Authorization",
+		header.ContentType,
+		header.Upgrade,
+		header.Origin,
+		header.Host,
+		header.Connection,
+		header.Authorization,
+		header.AcceptEncoding,
+		header.AcceptLanguage,
+		header.AccessControlAllowOrigin,
+		header.AccessControlRequestMethod,
+		header.AccessControlRequestHeaders,
+		header.AccessControlAllowCredentials,
+		header.AccessControlMaxAge,
 	}
 )
 
@@ -35,6 +41,7 @@ func CorsMiddleware() gin.HandlerFunc {
 		AllowAllOrigins:        true,
 		AllowMethods:           methods,
 		AllowHeaders:           headers,
+		AllowCredentials:       true,
 	}
 
 	return cors.New(conf)

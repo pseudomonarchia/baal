@@ -34,14 +34,15 @@ func New(c *controller.Controllers) *Router {
 	)
 
 	r.GET("/health", c.Health.Check)
-	r.StaticFile("/favicon.ico", "./assets/favicon.ico")
+	// r.StaticFile("/favicon.ico", "./assets/favicon.ico")
 
 	api := r.Group("api")
 	v1 := api.Group("v1")
 
 	v1.GET("/", c.Index.Status)
-	v1.GET("/login", c.OAuth.LoginURL)
-	v1.GET("/login/callback", c.OAuth.LoginCallBack)
+	v1.GET("/oauth", c.OAuth.LoginURL)
+	v1.GET("/oauth/callback", c.OAuth.LoginCallBack)
+	v1.POST("/oauth/token", c.OAuth.Token)
 
 	return &Router{r, c}
 }

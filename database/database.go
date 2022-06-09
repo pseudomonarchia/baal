@@ -16,19 +16,20 @@ const (
 	maxIdleConns = 10
 )
 
-// New Connent to datebase
+// New Connent to database
 func New() (*gorm.DB, error) {
 	conf := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	}
 
 	s := fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True",
+		"%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=%s",
 		config.Secret.Database.Mysql.Username,
 		config.Secret.Database.Mysql.Password,
 		config.Secret.Database.Mysql.Addr,
 		config.Secret.Database.Mysql.Port,
 		config.Secret.Database.Mysql.Database,
+		"Asia%2fTaipei",
 	)
 
 	conn, err := gorm.Open(mysql.Open(s), conf)
