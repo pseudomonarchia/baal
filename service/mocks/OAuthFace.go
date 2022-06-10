@@ -3,12 +3,8 @@
 package mocks
 
 import (
-	datatypes "gorm.io/datatypes"
-	gorm "gorm.io/gorm"
-
-	jwt "github.com/golang-jwt/jwt/v4"
-
 	mock "github.com/stretchr/testify/mock"
+	datatypes "gorm.io/datatypes"
 
 	model "baal/model"
 
@@ -20,34 +16,13 @@ type OAuthFace struct {
 	mock.Mock
 }
 
-// CheckTokenAndReplace provides a mock function with given fields: authorizationHeader
-func (_m *OAuthFace) CheckTokenAndReplace(authorizationHeader string) (string, bool) {
-	ret := _m.Called(authorizationHeader)
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func(string) string); ok {
-		r0 = rf(authorizationHeader)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	var r1 bool
-	if rf, ok := ret.Get(1).(func(string) bool); ok {
-		r1 = rf(authorizationHeader)
-	} else {
-		r1 = ret.Get(1).(bool)
-	}
-
-	return r0, r1
-}
-
-// CleanToken provides a mock function with given fields: UID
-func (_m *OAuthFace) CleanToken(UID string) error {
-	ret := _m.Called(UID)
+// CleanTokenResource provides a mock function with given fields: ref
+func (_m *OAuthFace) CleanTokenResource(ref *model.OAuthRefreshSchema) error {
+	ret := _m.Called(ref)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(UID)
+	if rf, ok := ret.Get(0).(func(*model.OAuthRefreshSchema) error); ok {
+		r0 = rf(ref)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -55,63 +30,35 @@ func (_m *OAuthFace) CleanToken(UID string) error {
 	return r0
 }
 
-// DecodeToken provides a mock function with given fields: str
-func (_m *OAuthFace) DecodeToken(str string) (*jwt.StandardClaims, error) {
-	ret := _m.Called(str)
+// FindRefreshToken provides a mock function with given fields: ref, query
+func (_m *OAuthFace) FindRefreshToken(ref *model.OAuthRefreshSchema, query ...interface{}) error {
+	var _ca []interface{}
+	_ca = append(_ca, ref)
+	_ca = append(_ca, query...)
+	ret := _m.Called(_ca...)
 
-	var r0 *jwt.StandardClaims
-	if rf, ok := ret.Get(0).(func(string) *jwt.StandardClaims); ok {
-		r0 = rf(str)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*model.OAuthRefreshSchema, ...interface{}) error); ok {
+		r0 = rf(ref, query...)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*jwt.StandardClaims)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(str)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
-// FindRefreshTokenFormUID provides a mock function with given fields: token, UID
-func (_m *OAuthFace) FindRefreshTokenFormUID(token string, UID string) (*model.OAuthRefreshSchema, error) {
-	ret := _m.Called(token, UID)
+// FindToken provides a mock function with given fields: ref, query
+func (_m *OAuthFace) FindToken(ref *model.OAuthTokenSchema, query ...interface{}) error {
+	var _ca []interface{}
+	_ca = append(_ca, ref)
+	_ca = append(_ca, query...)
+	ret := _m.Called(_ca...)
 
-	var r0 *model.OAuthRefreshSchema
-	if rf, ok := ret.Get(0).(func(string, string) *model.OAuthRefreshSchema); ok {
-		r0 = rf(token, UID)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*model.OAuthTokenSchema, ...interface{}) error); ok {
+		r0 = rf(ref, query...)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.OAuthRefreshSchema)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(token, UID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// FindToken provides a mock function with given fields: UID
-func (_m *OAuthFace) FindToken(UID string) *model.OAuthTokenSchema {
-	ret := _m.Called(UID)
-
-	var r0 *model.OAuthTokenSchema
-	if rf, ok := ret.Get(0).(func(string) *model.OAuthTokenSchema); ok {
-		r0 = rf(UID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.OAuthTokenSchema)
-		}
+		r0 = ret.Error(0)
 	}
 
 	return r0
@@ -131,13 +78,13 @@ func (_m *OAuthFace) GenerateHashFromUID(UID string) string {
 	return r0
 }
 
-// GenerateRefreshToken provides a mock function with given fields: OAuthUser, IP
-func (_m *OAuthFace) GenerateRefreshToken(OAuthUser *model.OAuthTokenSchema, IP string) (*model.OAuthRefreshSchema, error) {
-	ret := _m.Called(OAuthUser, IP)
+// GenerateRefreshToken provides a mock function with given fields: ref, IP
+func (_m *OAuthFace) GenerateRefreshToken(ref *model.OAuthTokenSchema, IP string) (*model.OAuthRefreshSchema, error) {
+	ret := _m.Called(ref, IP)
 
 	var r0 *model.OAuthRefreshSchema
 	if rf, ok := ret.Get(0).(func(*model.OAuthTokenSchema, string) *model.OAuthRefreshSchema); ok {
-		r0 = rf(OAuthUser, IP)
+		r0 = rf(ref, IP)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.OAuthRefreshSchema)
@@ -146,7 +93,7 @@ func (_m *OAuthFace) GenerateRefreshToken(OAuthUser *model.OAuthTokenSchema, IP 
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(*model.OAuthTokenSchema, string) error); ok {
-		r1 = rf(OAuthUser, IP)
+		r1 = rf(ref, IP)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -228,8 +175,8 @@ func (_m *OAuthFace) GetToken(requestURL string, code string) (*oauth2.Token, er
 	return r0, r1
 }
 
-// HashTokenToSHA provides a mock function with given fields: r
-func (_m *OAuthFace) HashTokenToSHA(r *datatypes.JSON) []byte {
+// HashJSONToSHA provides a mock function with given fields: r
+func (_m *OAuthFace) HashJSONToSHA(r *datatypes.JSON) []byte {
 	ret := _m.Called(r)
 
 	var r0 []byte
@@ -281,74 +228,16 @@ func (_m *OAuthFace) RefreshToken(requestURL string, token *oauth2.Token) (*oaut
 	return r0, r1
 }
 
-// SaveToken provides a mock function with given fields: userID, UID, token
-func (_m *OAuthFace) SaveToken(userID uint, UID string, token *oauth2.Token) (*model.OAuthTokenSchema, error) {
-	ret := _m.Called(userID, UID, token)
-
-	var r0 *model.OAuthTokenSchema
-	if rf, ok := ret.Get(0).(func(uint, string, *oauth2.Token) *model.OAuthTokenSchema); ok {
-		r0 = rf(userID, UID, token)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.OAuthTokenSchema)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(uint, string, *oauth2.Token) error); ok {
-		r1 = rf(userID, UID, token)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// SignToken provides a mock function with given fields: payload, r
-func (_m *OAuthFace) SignToken(payload *jwt.StandardClaims, r *datatypes.JSON) string {
-	ret := _m.Called(payload, r)
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func(*jwt.StandardClaims, *datatypes.JSON) string); ok {
-		r0 = rf(payload, r)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	return r0
-}
-
-// UseToken provides a mock function with given fields: tx, token
-func (_m *OAuthFace) UseToken(tx *gorm.DB, token model.OAuthTokenSchema) error {
-	ret := _m.Called(tx, token)
+// SaveToken provides a mock function with given fields: ref
+func (_m *OAuthFace) SaveToken(ref *model.OAuthTokenSchema) error {
+	ret := _m.Called(ref)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*gorm.DB, model.OAuthTokenSchema) error); ok {
-		r0 = rf(tx, token)
+	if rf, ok := ret.Get(0).(func(*model.OAuthTokenSchema) error); ok {
+		r0 = rf(ref)
 	} else {
 		r0 = ret.Error(0)
 	}
 
 	return r0
-}
-
-// ValidateToken provides a mock function with given fields: str, r
-func (_m *OAuthFace) ValidateToken(str string, r *datatypes.JSON) (bool, error) {
-	ret := _m.Called(str, r)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(string, *datatypes.JSON) bool); ok {
-		r0 = rf(str, r)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, *datatypes.JSON) error); ok {
-		r1 = rf(str, r)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
 }

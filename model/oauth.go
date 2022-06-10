@@ -2,8 +2,11 @@ package model
 
 import (
 	"encoding/json"
+	"regexp"
+	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/oauth2"
 	"gorm.io/datatypes"
 )
@@ -83,6 +86,11 @@ type GoogleOAuthUserInfo struct {
 	Locale        string `form:"Locale"`
 }
 
+// JWTClaims ...
+type JWTClaims struct {
+	jwt.StandardClaims
+}
+
 // TableName is GORM hook
 func (*OAuthTokenSchema) TableName() string {
 	return OAuthTokenTable
@@ -99,4 +107,49 @@ func (o *OAuthTokenSchema) UnmarshalToken() (*oauth2.Token, error) {
 // TableName is GORM hook
 func (*OAuthRefreshSchema) TableName() string {
 	return OAuthRefreshTable
+}
+
+// SignToken ...
+func (j *JWTClaims) SignToken(secret interface{}) string {
+	JWT, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, j).SignedString(secret)
+	return JWT
+}
+
+// DecodeToken ...
+func (j *JWTClaims) DecodeToken(token string) error {
+	s := strings.Split(token, ".")[1]
+	b, err := jwt.DecodeSegment(s)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(b, j)
+	return err
+}
+
+// CheckBearerToken ...
+func (*JWTClaims) CheckBearerToken(bearerToken string) bool {
+	reg := regexp.MustCompile(`(^Bearer )(.*\..*\..*$)`)
+	validate := reg.Match([]byte(bearerToken))
+
+	return validate
+}
+
+// PickTokenFormBearer ...
+func (*JWTClaims) PickTokenFormBearer(bearerToken string) string {
+	reg := regexp.MustCompile(`(^Bearer )(.*\..*\..*$)`)
+	str := reg.ReplaceAllString(bearerToken, "$2")
+
+	return str
+}
+
+// ValidateToken ...
+func (j *JWTClaims) ValidateToken(token string, secret interface{}) error {
+	str := j.PickTokenFormBearer(token)
+	var keyFunc = func(t *jwt.Token) (interface{}, error) {
+		return secret, nil
+	}
+
+	_, err := jwt.Parse(str, keyFunc)
+	return err
 }

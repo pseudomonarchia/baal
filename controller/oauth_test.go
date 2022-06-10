@@ -5,6 +5,7 @@ import (
 	"baal/model"
 	"baal/service/mocks"
 	"baal/test"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,7 +14,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/oauth2"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -196,9 +199,10 @@ func TestLoginCallBack(t *testing.T) {
 	t.Run("Not found user return failure", func(t *testing.T) {
 		codeStr := "code"
 		OAuthToken := &oauth2.Token{}
+		userData := &model.UserSchema{}
 		OAuthService.On("GetToken", "", codeStr).Return(OAuthToken, nil).Once()
 		OAuthService.On("GetInfo", "", OAuthToken).Return(&model.GoogleOAuthUserInfo{}, nil).Once()
-		userService.On("GetByQuery", &model.UserSchema{}).Return(nil, gorm.ErrRecordNotFound).Once()
+		userService.On("GetByQuery", userData).Return(gorm.ErrRecordNotFound).Once()
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)
@@ -233,12 +237,27 @@ func TestLoginCallBack(t *testing.T) {
 		UID := "UID"
 		OAuthToken := &oauth2.Token{}
 		userData := &model.UserSchema{}
-		OAuthData := &model.OAuthTokenSchema{}
+		buf, _ := json.Marshal(OAuthToken)
+		OAuthData := &model.OAuthTokenSchema{
+			UID:       UID,
+			UserID:    userData.ID,
+			TokenInfo: datatypes.JSON(buf),
+			Provider:  model.OAuthProviderGoogle,
+		}
+
 		OAuthService.On("GetToken", "", codeStr).Return(OAuthToken, nil).Once()
 		OAuthService.On("GetInfo", "", OAuthToken).Return(&model.GoogleOAuthUserInfo{}, nil).Once()
-		userService.On("GetByQuery", userData).Return(&model.UserSchema{Enable: true}, nil).Once()
+		userService.On("GetByQuery", userData).Return(nil).Once().Run(func(args mock.Arguments) {
+			arg := args.Get(0).(*model.UserSchema)
+			arg.Enable = true
+		})
+
 		OAuthService.On("GenerateUID").Return(UID).Once()
-		OAuthService.On("SaveToken", userData.ID, UID, OAuthToken).Return(OAuthData, nil).Once()
+		OAuthService.On("SaveToken", OAuthData).Return(nil).Once().Run(func(args mock.Arguments) {
+			arg := args.Get(0).(*model.OAuthTokenSchema)
+			arg.Use = true
+		})
+
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", preAPIURL.String(), nil)
 		r.ServeHTTP(w, req)

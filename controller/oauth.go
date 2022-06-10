@@ -5,6 +5,7 @@ import (
 	"baal/lib/header"
 	"baal/model"
 	"baal/service"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -14,6 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/oauth2"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -98,7 +101,8 @@ func (o *OAuth) LoginCallBack(c *gin.Context) {
 		return
 	}
 
-	userRef, err := o.Service.User.GetByQuery(&model.UserSchema{Email: OAuthInfo.Email})
+	userRef := &model.UserSchema{Email: OAuthInfo.Email}
+	err = o.Service.User.GetByQuery(userRef)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		ThrowErrorRedirect(c, redirectURL, errorcode.NotFoundOAuthUser)
 		return
@@ -110,8 +114,16 @@ func (o *OAuth) LoginCallBack(c *gin.Context) {
 	}
 
 	UID := o.Service.OAuth.GenerateUID()
-	OAuthRef, err := o.Service.OAuth.SaveToken(userRef.ID, UID, token)
-	rawQuery.Add("code", OAuthRef.UID)
+	buf, _ := json.Marshal(token)
+	OAuthRef := &model.OAuthTokenSchema{
+		UID:       UID,
+		UserID:    userRef.ID,
+		TokenInfo: datatypes.JSON(buf),
+		Provider:  model.OAuthProviderGoogle,
+	}
+
+	_ = o.Service.OAuth.SaveToken(OAuthRef)
+	rawQuery.Add("code", UID)
 	redirectURL.RawQuery = rawQuery.Encode()
 	c.Redirect(http.StatusSeeOther, redirectURL.String())
 }
@@ -125,56 +137,54 @@ func (o *OAuth) Token(c *gin.Context) {
 		return
 	}
 
+	var IP = c.ClientIP()
+	var now = time.Now()
+	var secret []byte
+	var token *oauth2.Token
+	var payload *model.JWTClaims
+	var OAuthRef *model.OAuthTokenSchema
+	var refreshRef *model.OAuthRefreshSchema
+
 	switch body.GrantType {
 	case model.GrantTypeFromCode:
-		OAuthRef := o.Service.OAuth.FindToken(body.Code)
-		if OAuthRef == nil {
+		OAuthRef = &model.OAuthTokenSchema{UID: body.Code, Use: false}
+		err := o.Service.OAuth.FindToken(OAuthRef, "Use")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ThrowError(c, errorcode.OAuthLoginFailed)
 			return
 		}
 
-		token, _ := OAuthRef.UnmarshalToken()
-		payload := &jwt.StandardClaims{
-			Issuer:    c.Request.Host,
-			Subject:   c.GetHeader(header.Origin),
-			Audience:  strconv.Itoa(int(OAuthRef.UserID)),
-			Id:        OAuthRef.UID,
-			ExpiresAt: token.Expiry.Unix(),
-			IssuedAt:  time.Now().Unix(),
-			NotBefore: time.Now().Unix(),
-		}
-
-		refreshRef, _ := o.Service.OAuth.GenerateRefreshToken(OAuthRef, c.ClientIP())
-		res := &model.TokenSchema{
-			AccessToken:  o.Service.OAuth.SignToken(payload, &OAuthRef.TokenInfo),
-			Expiry:       token.Expiry,
-			TokenType:    token.TokenType,
-			RefreshToken: refreshRef.Token,
-		}
-
-		c.JSON(http.StatusCreated, res)
+		token, _ = OAuthRef.UnmarshalToken()
 		break
 	case model.GrantTypeFromRefreshToken:
-		a := c.GetHeader(header.Authorization)
-		t, ok := o.Service.OAuth.CheckTokenAndReplace(a)
-		if !ok {
+		auth := c.GetHeader(header.Authorization)
+		payload = &model.JWTClaims{}
+
+		if !payload.CheckBearerToken(auth) {
 			ThrowError(c, errorcode.OAuthTokenFormatInvalid)
 			return
 		}
 
-		payload, err := o.Service.OAuth.DecodeToken(t)
-		if err != nil {
+		if err := payload.DecodeToken(auth); err != nil {
 			ThrowError(c, errorcode.OAuthTokenFormatInvalid)
 			return
 		}
 
-		refreshRef, err := o.Service.OAuth.FindRefreshTokenFormUID(body.Code, payload.Id)
+		refreshRef = &model.OAuthRefreshSchema{Token: body.Code, OAuthUID: payload.Id}
+		err := o.Service.OAuth.FindRefreshToken(refreshRef)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ThrowError(c, errorcode.OAuthTokenNotFound)
 			return
 		}
 
-		if IP := c.ClientIP(); refreshRef.IP != IP {
+		if refreshRef.ExpiresAt.Before(now) || refreshRef.ExpiresAt.Equal(now) {
+			o.Service.OAuth.CleanTokenResource(refreshRef)
+			ThrowError(c, errorcode.OAuthTokenReject)
+			return
+		}
+
+		if refreshRef.IP != IP {
+			o.Service.OAuth.CleanTokenResource(refreshRef)
 			ThrowError(c, errorcode.OAuthIssuedIPFailed)
 			return
 		}
@@ -184,34 +194,46 @@ func (o *OAuth) Token(c *gin.Context) {
 			return
 		}
 
-		validate, err := o.Service.OAuth.ValidateToken(t, &refreshRef.OAuthToken.TokenInfo)
-		tokenExpired := errors.Is(err, jwt.ErrTokenExpired)
-		if !validate && !tokenExpired {
+		secret = o.Service.OAuth.HashJSONToSHA(&refreshRef.OAuthToken.TokenInfo)
+		if err := payload.ValidateToken(auth, secret); err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
 			ThrowError(c, errorcode.OAuthTokenInvalid)
 			return
 		}
 
-		token, _ := refreshRef.OAuthToken.UnmarshalToken()
+		token, _ = refreshRef.OAuthToken.UnmarshalToken()
 		token, err = o.Service.OAuth.RefreshToken(c.Request.Host, token)
 		if err != nil {
 			ThrowError(c, errorcode.OAuthTokenReject)
 			return
 		}
 
-		OAuthRef, _ := o.Service.OAuth.SaveToken(refreshRef.OAuthToken.UserID, refreshRef.OAuthUID, token)
-		refreshRef, _ = o.Service.OAuth.GenerateRefreshToken(OAuthRef, c.ClientIP())
-
-		payload.ExpiresAt = token.Expiry.Unix()
-		payload.IssuedAt = time.Now().Unix()
-		payload.NotBefore = time.Now().Unix()
-
-		res := &model.TokenSchema{
-			AccessToken:  o.Service.OAuth.SignToken(payload, &OAuthRef.TokenInfo),
-			Expiry:       token.Expiry,
-			TokenType:    token.TokenType,
-			RefreshToken: refreshRef.Token,
+		buf, _ := json.Marshal(token)
+		OAuthRef = &model.OAuthTokenSchema{
+			UID:       refreshRef.OAuthUID,
+			UserID:    refreshRef.OAuthToken.UserID,
+			TokenInfo: datatypes.JSON(buf),
+			Provider:  model.OAuthProviderGoogle,
 		}
-
-		c.JSON(http.StatusCreated, res)
 	}
+
+	secret = o.Service.OAuth.HashJSONToSHA(&OAuthRef.TokenInfo)
+	refreshRef, _ = o.Service.OAuth.GenerateRefreshToken(OAuthRef, IP)
+	payload = &model.JWTClaims{
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    c.Request.Host,
+			Subject:   c.GetHeader(header.Origin),
+			Audience:  strconv.Itoa(int(OAuthRef.UserID)),
+			Id:        OAuthRef.UID,
+			ExpiresAt: token.Expiry.Unix(),
+			IssuedAt:  now.Unix(),
+			NotBefore: now.Unix(),
+		},
+	}
+
+	c.JSON(http.StatusCreated, &model.TokenSchema{
+		AccessToken:  payload.SignToken(secret),
+		Expiry:       token.Expiry,
+		TokenType:    token.TokenType,
+		RefreshToken: refreshRef.Token,
+	})
 }

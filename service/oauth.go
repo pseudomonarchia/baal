@@ -8,11 +8,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"regexp"
-	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
@@ -36,19 +33,14 @@ type OAuthFace interface {
 	GetToken(requestURL, code string) (*oauth2.Token, error)
 	GetInfo(requestURL string, token *oauth2.Token) (*model.GoogleOAuthUserInfo, error)
 	RefreshToken(requestURL string, token *oauth2.Token) (*oauth2.Token, error)
-	SaveToken(userID uint, UID string, token *oauth2.Token) (*model.OAuthTokenSchema, error)
+	SaveToken(ref *model.OAuthTokenSchema) error
 	GenerateUID() string
 	GenerateHashFromUID(UID string) string
-	GenerateRefreshToken(OAuthUser *model.OAuthTokenSchema, IP string) (*model.OAuthRefreshSchema, error)
-	FindToken(UID string) *model.OAuthTokenSchema
-	FindRefreshTokenFormUID(token string, UID string) (*model.OAuthRefreshSchema, error)
-	CleanToken(UID string) error
-	UseToken(tx *gorm.DB, token model.OAuthTokenSchema) error
-	HashTokenToSHA(r *datatypes.JSON) []byte
-	CheckTokenAndReplace(authorizationHeader string) (string, bool)
-	DecodeToken(str string) (*jwt.StandardClaims, error)
-	ValidateToken(str string, r *datatypes.JSON) (bool, error)
-	SignToken(payload *jwt.StandardClaims, r *datatypes.JSON) string
+	GenerateRefreshToken(ref *model.OAuthTokenSchema, IP string) (*model.OAuthRefreshSchema, error)
+	FindToken(ref *model.OAuthTokenSchema, query ...interface{}) error
+	FindRefreshToken(ref *model.OAuthRefreshSchema, query ...interface{}) error
+	CleanTokenResource(ref *model.OAuthRefreshSchema) error
+	HashJSONToSHA(r *datatypes.JSON) []byte
 }
 
 // OAuth ...
@@ -128,24 +120,8 @@ func (o *OAuth) RefreshToken(
 }
 
 // SaveToken store the token in database and delete the existing token of this user
-func (o *OAuth) SaveToken(
-	userID uint,
-	UID string,
-	token *oauth2.Token,
-) (
-	*model.OAuthTokenSchema,
-	error,
-) {
-	b, _ := json.Marshal(token)
-	OAuthUser := &model.OAuthTokenSchema{
-		UID:       UID,
-		UserID:    userID,
-		TokenInfo: datatypes.JSON(b),
-		Provider:  model.OAuthProviderGoogle,
-	}
-
-	err := o.Database.Save(OAuthUser).Error
-	return OAuthUser, err
+func (o *OAuth) SaveToken(ref *model.OAuthTokenSchema) error {
+	return o.Database.Save(ref).Error
 }
 
 // GenerateUID ...
@@ -161,18 +137,19 @@ func (o *OAuth) GenerateHashFromUID(UID string) string {
 
 // GenerateRefreshToken ...
 func (o *OAuth) GenerateRefreshToken(
-	OAuthUser *model.OAuthTokenSchema,
+	ref *model.OAuthTokenSchema,
 	IP string,
 ) (
 	*model.OAuthRefreshSchema,
 	error,
 ) {
 	refreshInfo := &model.OAuthRefreshSchema{
-		OAuthUID:  OAuthUser.UID,
-		IP:        IP,
-		Token:     o.GenerateHashFromUID(OAuthUser.UID),
-		IssuedAt:  time.Now(),
-		ExpiresAt: time.Now().Add(24 * 7 * time.Hour),
+		OAuthUID:   ref.UID,
+		IP:         IP,
+		Token:      o.GenerateHashFromUID(ref.UID),
+		IssuedAt:   time.Now(),
+		ExpiresAt:  time.Now().Add(24 * 7 * time.Hour),
+		OAuthToken: *ref,
 	}
 
 	err := o.Database.Transaction(func(tx *gorm.DB) error {
@@ -180,7 +157,12 @@ func (o *OAuth) GenerateRefreshToken(
 			return err
 		}
 
-		if err := o.UseToken(tx, *OAuthUser); err != nil {
+		if ref.Use {
+			return nil
+		}
+
+		ref.Use = true
+		if err := tx.Save(ref).Error; err != nil {
 			return err
 		}
 
@@ -191,95 +173,47 @@ func (o *OAuth) GenerateRefreshToken(
 }
 
 // FindToken ...
-func (o *OAuth) FindToken(UID string) *model.OAuthTokenSchema {
-	OAuthUser := &model.OAuthTokenSchema{UID: UID, Use: false}
-	record := o.Database.Where(OAuthUser, "Use").Take(OAuthUser)
-	if record.Error == gorm.ErrRecordNotFound {
-		return nil
-	}
-
-	return OAuthUser
+func (o *OAuth) FindToken(ref *model.OAuthTokenSchema, query ...interface{}) error {
+	err := o.Database.Where(ref, query...).Take(ref).Error
+	return err
 }
 
-// FindRefreshTokenFormUID ...
-func (o *OAuth) FindRefreshTokenFormUID(
-	token string,
-	UID string,
-) (
-	*model.OAuthRefreshSchema,
-	error,
-) {
-	refreshToken := &model.OAuthRefreshSchema{Token: token, OAuthUID: UID}
+// FindRefreshToken ...
+func (o *OAuth) FindRefreshToken(ref *model.OAuthRefreshSchema, query ...interface{}) error {
 	err := o.Database.
 		Preload("OAuthToken").
 		Preload("OAuthToken.User").
-		Where(refreshToken, "Token", "UID").
-		Take(refreshToken).
+		Where(ref, query...).
+		Take(ref).
 		Error
 
-	return refreshToken, err
+	return err
 }
 
-// CleanToken ...
-func (o *OAuth) CleanToken(UID string) error {
-	OAuthUser := &model.OAuthTokenSchema{UID: UID}
-	err := o.Database.Delete(OAuthUser).Error
+// CleanTokenResource ...
+func (o *OAuth) CleanTokenResource(ref *model.OAuthRefreshSchema) error {
+	err := o.Database.Transaction(func(tx *gorm.DB) error {
+		err := tx.Delete(ref.OAuthToken).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.Delete(ref).Error
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	return err
 }
 
-// UseToken ...
-func (*OAuth) UseToken(tx *gorm.DB, token model.OAuthTokenSchema) error {
-	token.Use = true
-	err := tx.Save(token).Error
-
-	return err
-}
-
-// HashTokenToSHA ...
-func (*OAuth) HashTokenToSHA(r *datatypes.JSON) []byte {
+// HashJSONToSHA ...
+func (*OAuth) HashJSONToSHA(r *datatypes.JSON) []byte {
 	h := sha1.New()
 	h.Write([]byte(r.String()))
 	secret := h.Sum(nil)
 
 	return secret
-}
-
-// CheckTokenAndReplace ...
-func (*OAuth) CheckTokenAndReplace(bearerToken string) (string, bool) {
-	reg := regexp.MustCompile(`(^Bearer )(.*\..*\..*$)`)
-	validate := reg.Match([]byte(bearerToken))
-	str := reg.ReplaceAllString(bearerToken, "$2")
-
-	return str, validate
-}
-
-// DecodeToken ...
-func (*OAuth) DecodeToken(str string) (*jwt.StandardClaims, error) {
-	token := &jwt.StandardClaims{}
-	s := strings.Split(str, ".")[1]
-	b, err := jwt.DecodeSegment(s)
-	if err != nil {
-		return token, err
-	}
-
-	err = json.Unmarshal(b, token)
-	return token, err
-}
-
-// ValidateToken ...
-func (o *OAuth) ValidateToken(str string, r *datatypes.JSON) (bool, error) {
-	var keyFunc = func(t *jwt.Token) (interface{}, error) {
-		return o.HashTokenToSHA(r), nil
-	}
-
-	_, err := jwt.Parse(str, keyFunc)
-	return err == nil, err
-}
-
-// SignToken ...
-func (o *OAuth) SignToken(payload *jwt.StandardClaims, r *datatypes.JSON) string {
-	secret := o.HashTokenToSHA(r)
-	JWT, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, payload).SignedString(secret)
-	return JWT
 }

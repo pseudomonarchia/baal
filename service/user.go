@@ -8,7 +8,7 @@ import (
 
 // UserFace User service interface
 type UserFace interface {
-	GetByQuery(m *model.UserSchema) (*model.UserSchema, error)
+	GetByQuery(m *model.UserSchema) error
 }
 
 // User ...
@@ -17,8 +17,7 @@ type User struct {
 }
 
 // GetByQuery fetch user data by query
-func (u *User) GetByQuery(m *model.UserSchema) (*model.UserSchema, error) {
-	user := &model.UserSchema{}
-	err := u.Database.Take(user).Error
-	return user, err
+func (u *User) GetByQuery(m *model.UserSchema) error {
+	err := u.Database.Where(m).Take(m).Error
+	return err
 }

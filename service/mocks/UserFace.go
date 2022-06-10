@@ -14,24 +14,15 @@ type UserFace struct {
 }
 
 // GetByQuery provides a mock function with given fields: m
-func (_m *UserFace) GetByQuery(m *model.UserSchema) (*model.UserSchema, error) {
+func (_m *UserFace) GetByQuery(m *model.UserSchema) error {
 	ret := _m.Called(m)
 
-	var r0 *model.UserSchema
-	if rf, ok := ret.Get(0).(func(*model.UserSchema) *model.UserSchema); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*model.UserSchema) error); ok {
 		r0 = rf(m)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.UserSchema)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(*model.UserSchema) error); ok {
-		r1 = rf(m)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
