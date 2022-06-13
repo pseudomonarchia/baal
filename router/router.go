@@ -20,12 +20,6 @@ type Router struct {
 
 // New will register all routers
 func New(c *controller.Controllers) *Router {
-	if config.Global.IsDev() {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
 	r := gin.New()
 	r.Use(
 		middleware.CorsMiddleware(),
@@ -33,16 +27,15 @@ func New(c *controller.Controllers) *Router {
 		gin.Recovery(),
 	)
 
-	r.GET("/health", c.Health.Check)
-	// r.StaticFile("/favicon.ico", "./assets/favicon.ico")
+	if config.Global.IsDev() {
+		gin.SetMode(gin.DebugMode)
+		SetupSwagger(r)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
-	api := r.Group("api")
-	v1 := api.Group("v1")
-
-	v1.GET("/", c.Index.Status)
-	v1.GET("/oauth", c.OAuth.LoginURL)
-	v1.GET("/oauth/callback", c.OAuth.LoginCallBack)
-	v1.POST("/oauth/token", c.OAuth.Token)
+	SetupBasicAPI(r, c)
+	SetupAPI(r, c)
 
 	return &Router{r, c}
 }

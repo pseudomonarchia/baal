@@ -1,0 +1,183 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Baal API Doc",
+        "title": "Baal API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:7001",
+    "basePath": "/api/v1",
+    "paths": {
+        "/oauth": {
+            "get": {
+                "description": "Get OAuth Login URL",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Get OAuth Login URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "redirect URL",
+                        "name": "redirect",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "303": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/oauth/callback": {
+            "get": {
+                "description": "OAuth Callback",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "OAuth Callback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "state",
+                        "name": "state",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "code",
+                        "name": "code",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "scope",
+                        "name": "scope",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "auth user",
+                        "name": "authuser",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "prompt",
+                        "name": "prompt",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "303": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/oauth/token": {
+            "post": {
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ],
+                "description": "OAuth Token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "OAuth Token",
+                "parameters": [
+                    {
+                        "description": "body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.TokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.TokenSchema"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "model.TokenRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "grant_type"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "grant_type": {
+                    "type": "string",
+                    "enum": [
+                        "code",
+                        "refresh_token"
+                    ]
+                }
+            }
+        },
+        "model.TokenSchema": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expiry": {
+                    "type": "string"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token_type": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerToken": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

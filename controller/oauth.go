@@ -26,6 +26,14 @@ type OAuth struct {
 }
 
 // LoginURL get sso login url
+// @Summary      Get OAuth Login URL
+// @Description  Get OAuth Login URL
+// @Tags         OAuth
+// @Accept       json
+// @Produce      json
+// @Param        redirect  query  string  true  "redirect URL"
+// @response     303
+// @Router       /oauth [get]
 func (o *OAuth) LoginURL(c *gin.Context) {
 	query := &model.GoogleOAuthRequest{}
 	_ = c.ShouldBindQuery(query)
@@ -54,6 +62,18 @@ func (o *OAuth) LoginURL(c *gin.Context) {
 }
 
 // LoginCallBack get sso login callback
+// @Summary      OAuth Callback
+// @Description  OAuth Callback
+// @Tags         OAuth
+// @Accept       json
+// @Produce      json
+// @Param        state     query  string  true  "state"
+// @Param        code      query  string  true  "code"
+// @Param        scope     query  string  true  "scope"
+// @Param        authuser  query  string  true  "auth user"
+// @Param        prompt    query  string  true  "prompt"
+// @response     303
+// @Router       /oauth/callback [get]
 func (o *OAuth) LoginCallBack(c *gin.Context) {
 	query := &model.GoogleOAuthResponse{}
 	_ = c.ShouldBindQuery(query)
@@ -129,6 +149,15 @@ func (o *OAuth) LoginCallBack(c *gin.Context) {
 }
 
 // Token ...
+// @Summary      OAuth Token
+// @Description  OAuth Token
+// @Tags         OAuth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      model.TokenRequest  true  "body"
+// @Success      201   {object}  model.TokenSchema
+// @Router       /oauth/token [post]
+// @Security     BearerToken
 func (o *OAuth) Token(c *gin.Context) {
 	body := &model.TokenRequest{}
 	_ = c.ShouldBindJSON(body)

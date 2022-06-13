@@ -1,0 +1,121 @@
+basePath: /api/v1
+definitions:
+  model.TokenRequest:
+    properties:
+      code:
+        type: string
+      grant_type:
+        enum:
+        - code
+        - refresh_token
+        type: string
+    required:
+    - code
+    - grant_type
+    type: object
+  model.TokenSchema:
+    properties:
+      access_token:
+        type: string
+      expiry:
+        type: string
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+host: localhost:7001
+info:
+  contact: {}
+  description: Baal API Doc
+  title: Baal API
+  version: "1.0"
+paths:
+  /oauth:
+    get:
+      consumes:
+      - application/json
+      description: Get OAuth Login URL
+      parameters:
+      - description: redirect URL
+        in: query
+        name: redirect
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "303":
+          description: ""
+      summary: Get OAuth Login URL
+      tags:
+      - OAuth
+  /oauth/callback:
+    get:
+      consumes:
+      - application/json
+      description: OAuth Callback
+      parameters:
+      - description: state
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: scope
+        in: query
+        name: scope
+        required: true
+        type: string
+      - description: auth user
+        in: query
+        name: authuser
+        required: true
+        type: string
+      - description: prompt
+        in: query
+        name: prompt
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "303":
+          description: ""
+      summary: OAuth Callback
+      tags:
+      - OAuth
+  /oauth/token:
+    post:
+      consumes:
+      - application/json
+      description: OAuth Token
+      parameters:
+      - description: body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.TokenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.TokenSchema'
+      security:
+      - BearerToken: []
+      summary: OAuth Token
+      tags:
+      - OAuth
+securityDefinitions:
+  BearerToken:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
